@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest>
+  <control namespace="Contoso" constructor="PipelineKanban" version="0.4.0"
+            display-name-key="Pipeline Kanban" description-key="Drag-and-drop kanban board for any view, grouped by a choice column"
+            control-type="standard">
+
+    <!-- Dataset controls bind to a view/subgrid rather than a single record. -->
+    <data-set name="records" display-name-key="Records" />
+
+    <property name="groupByField"
+              display-name-key="Group by field (logical name)"
+              description-key="Logical name of the Option Set column to use as kanban columns, e.g. a custom Pipeline Stage choice field"
+              of-type="SingleLine.Text"
+              usage="input"
+              required="true" />
+
+    <property name="valueField"
+              display-name-key="Value field (logical name, optional)"
+              description-key="Logical name of a currency/number column to total per column, e.g. estimatedvalue. Leave blank to hide totals."
+              of-type="SingleLine.Text"
+              usage="input"
+              required="false" />
+
+    <resources>
+      <code path="index.ts" order="1" />
+      <css path="css/PipelineKanban.css" order="1" />
+    </resources>
+
+    <feature-usage>
+      <uses-feature name="WebAPI" required="true" />
+      <uses-feature name="Utility" required="true" />
+    </feature-usage>
+
+  </control>
+</manifest>

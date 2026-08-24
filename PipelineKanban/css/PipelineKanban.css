@@ -1,0 +1,130 @@
+.pk-root {
+  --pk-ink: #1B2340;
+  --pk-paper: #F4F5F8;
+  --pk-slate: #5B6478;
+  --pk-slate-soft: #9BA2B4;
+  --pk-teal: #1F8A70;
+  --pk-teal-soft: #DCEFE9;
+  --pk-border: #E1E4EC;
+
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  color: var(--pk-ink);
+  height: 100%;
+  overflow: hidden;
+}
+
+.pk-status {
+  padding: 24px;
+  font-size: 13px;
+  color: var(--pk-slate);
+  text-align: center;
+}
+
+.pk-board {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-sizing: border-box;
+}
+
+.pk-column {
+  flex: 0 0 260px;
+  background: var(--pk-paper);
+  border-radius: 10px;
+  border: 1px solid var(--pk-border);
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.pk-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 4px;
+}
+
+.pk-col-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pk-col-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pk-slate);
+  background: #fff;
+  border: 1px solid var(--pk-border);
+  border-radius: 20px;
+  padding: 1px 8px;
+}
+
+.pk-col-total {
+  padding: 0 14px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pk-teal);
+}
+
+.pk-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 10px 10px;
+  min-height: 40px;
+  transition: background .15s;
+}
+
+.pk-col-body.pk-drop-hover {
+  background: var(--pk-teal-soft);
+  border-radius: 8px;
+}
+
+.pk-card {
+  background: #fff;
+  border: 1px solid var(--pk-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  box-shadow: 0 1px 2px rgba(27,35,64,0.05);
+  transition: opacity .15s, box-shadow .15s;
+}
+
+.pk-card:hover {
+  box-shadow: 0 2px 6px rgba(27,35,64,0.1);
+}
+
+.pk-card.dragging {
+  opacity: 0.4;
+}
+
+.pk-card-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.pk-card-value {
+  font-size: 11.5px;
+  color: var(--pk-slate);
+}
+
+.pk-add-btn {
+  margin: 0 10px 10px;
+  background: #fff;
+  border: 1px dashed var(--pk-border);
+  border-radius: 6px;
+  padding: 7px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--pk-slate);
+  cursor: pointer;
+}
+
+.pk-add-btn:hover {
+  border-color: var(--pk-teal);
+  color: var(--pk-teal);
+}
