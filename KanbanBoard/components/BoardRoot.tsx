@@ -4,6 +4,7 @@ import { applyOverrides } from "../model/reconcile";
 import { OptionValue } from "../model/types";
 import { ColumnBinding, DatasetLike, useDatasetRecords } from "../hooks/useDatasetRecords";
 import { useCardDrag } from "../hooks/useCardDrag";
+import { useKeyboardDrag } from "../hooks/useKeyboardDrag";
 import { MoveWriter, useOptimisticMove } from "../hooks/useOptimisticMove";
 import { useOptionMetadata } from "../hooks/useOptionMetadata";
 import { OptionMetadataService } from "../services/metadata";
@@ -40,6 +41,7 @@ export const BoardRoot: React.FC<BoardRootProps> = ({
   const { records, paging } = useDatasetRecords(dataset, binding);
   const { registry, move, observe } = useOptimisticMove(writer, entityName, attributeName);
   const drag = useCardDrag();
+  const keyboard = useKeyboardDrag();
 
   React.useEffect(() => {
     const values = new Map<string, OptionValue | null>();
@@ -50,8 +52,10 @@ export const BoardRoot: React.FC<BoardRootProps> = ({
   }, [records, observe]);
 
   const handleMove = React.useCallback(
-    (recordId: string, _from: OptionValue | null, to: OptionValue | null): void => {
-      void move(recordId, _from, to).then(onMoved, onMoved);
+    async (recordId: string, from: OptionValue | null, to: OptionValue | null): Promise<boolean> => {
+      const accepted = await move(recordId, from, to);
+      onMoved();
+      return accepted;
     },
     [move, onMoved]
   );
@@ -92,6 +96,8 @@ export const BoardRoot: React.FC<BoardRootProps> = ({
         allowDrag={allowDrag}
         drag={drag.state}
         dispatchDrag={drag.dispatch}
+        keyboard={keyboard.state}
+        dispatchKeyboard={keyboard.dispatch}
         onOpenRecord={onOpenRecord}
         onMove={handleMove}
       />

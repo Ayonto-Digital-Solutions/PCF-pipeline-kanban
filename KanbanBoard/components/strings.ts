@@ -8,6 +8,13 @@ export const STRING = {
   cardUntitled: "Card_Untitled",
   errorTitle: "Error_Title",
   errorRetry: "Error_Retry",
+  columnAccessibleName: "Column_AccessibleName",
+  a11yGrabbed: "A11y_Grabbed",
+  a11yTarget: "A11y_Target",
+  a11yDropped: "A11y_Dropped",
+  a11yDropUnchanged: "A11y_DropUnchanged",
+  a11yCancelled: "A11y_Cancelled",
+  a11yRejected: "A11y_Rejected",
 } as const;
 
 export type Translate = (key: string) => string;

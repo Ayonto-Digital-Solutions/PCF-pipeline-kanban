@@ -98,6 +98,22 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   Wartebefehle auf Runner-Ergebnisse. Ein noch laufender Lauf wird als offener Punkt berichtet und
   beim nächsten Aufruf nachgetragen.
 
+- Tastaturpfad zum Verschieben: Leertaste nimmt eine fokussierte Karte auf, Pfeiltasten wechseln
+  Zielspalte und Position, Leertaste legt ab, Escape bricht ab. Derselbe `useOptimisticMove`-Pfad
+  wie beim Zeiger, keine zweite Schreiblogik.
+- Fokusführung: nach Ablage und nach Abbruch bleibt der Fokus auf der Karte, auch wenn sie durch die
+  Ablage in eine andere Spalte gewandert ist. Bei Ablehnung durch den Server ebenso, dort in der
+  Ausgangsspalte.
+- `role="list"` auf dem Spaltenkörper mit zugänglichem Namen aus Optionslabel und Anzahl,
+  `role="listitem"` je Karte, und eine höfliche `aria-live`-Region, die Aufnahme, Zielwechsel,
+  Ablage, Abbruch und Ablehnung ansagt. Alle Texte aus resx.
+- Zweifarbiger Fokusring, dunkler Kern mit hellem Hof. Ein einfarbiger dunkler Ring erreichte auf
+  dunklen Optionsfarben nur 1,08 bis 2,11 und ging dort unter; der zweifarbige liegt auf jedem
+  geprüften Grund über 3.
+- Zielmarkierung nicht mehr allein über Farbe: gestrichelte Umrandung des Spaltenkörpers und ein
+  Ring im Spaltenkopf, dazu `forced-colors`-Regeln.
+- 49 weitere Tests, zusammen 218.
+
 ### Fixed
 
 - `jsdom` von `30.0.1` auf `26.1.0`. jsdom 30 deklariert `engines.node: ^22.22.2 || ^24.15.0 ||

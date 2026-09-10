@@ -142,11 +142,6 @@
   border-color: var(--ayonto-muted);
 }
 
-.ayonto-kanban-root .ayonto-kanban-card:focus-visible {
-  outline: 2px solid var(--ayonto-ink);
-  outline-offset: 2px;
-}
-
 .ayonto-kanban-root .ayonto-kanban-card-title {
   font-size: 12.5px;
   font-weight: 600;
@@ -213,5 +208,54 @@
 @media (prefers-reduced-motion: reduce) {
   .ayonto-kanban-root .ayonto-kanban-column {
     transition: none;
+  }
+}
+
+.ayonto-kanban-root .ayonto-kanban-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ayonto-kanban-root .ayonto-kanban-card-slot {
+  display: block;
+}
+
+.ayonto-kanban-root .ayonto-kanban-card:focus-visible,
+.ayonto-kanban-root .ayonto-kanban-card.is-grabbed {
+  outline: 3px solid var(--ayonto-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--ayonto-surface);
+}
+
+.ayonto-kanban-root .ayonto-kanban-card.is-grabbed {
+  border-color: var(--ayonto-ink);
+}
+
+.ayonto-kanban-root .ayonto-kanban-column.is-drop-target .ayonto-kanban-column-head::after {
+  content: "";
+  position: absolute;
+  inset: auto 12px 4px auto;
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+@media (forced-colors: active) {
+  .ayonto-kanban-root .ayonto-kanban-card:focus-visible,
+  .ayonto-kanban-root .ayonto-kanban-card.is-grabbed {
+    outline: 3px solid CanvasText;
+  }
+
+  .ayonto-kanban-root .ayonto-kanban-column.is-drop-target .ayonto-kanban-column-body {
+    outline-color: CanvasText;
   }
 }

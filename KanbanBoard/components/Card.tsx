@@ -8,18 +8,43 @@ export interface CardProps {
   readonly translate: Translate;
   readonly draggable: boolean;
   readonly dragging: boolean;
+  readonly grabbed: boolean;
   readonly onOpen: (recordId: string) => void;
   readonly onPointerDown: (event: React.PointerEvent<HTMLButtonElement>, card: CardRecord) => void;
+  readonly onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>, card: CardRecord) => void;
 }
 
-export const Card: React.FC<CardProps> = ({ card, translate, draggable, dragging, onOpen, onPointerDown }) => (
+function classNameFor(dragging: boolean, grabbed: boolean): string {
+  const names = ["ayonto-kanban-card"];
+  if (dragging) {
+    names.push("is-dragging");
+  }
+  if (grabbed) {
+    names.push("is-grabbed");
+  }
+  return names.join(" ");
+}
+
+export const Card: React.FC<CardProps> = ({
+  card,
+  translate,
+  draggable,
+  dragging,
+  grabbed,
+  onOpen,
+  onPointerDown,
+  onKeyDown,
+}) => (
   <button
     type="button"
-    className={dragging ? "ayonto-kanban-card is-dragging" : "ayonto-kanban-card"}
+    className={classNameFor(dragging, grabbed)}
     data-record-id={card.id}
     data-draggable={draggable ? "true" : "false"}
     onPointerDown={(event) => {
       onPointerDown(event, card);
+    }}
+    onKeyDown={(event) => {
+      onKeyDown(event, card);
     }}
     onClick={() => {
       onOpen(card.id);

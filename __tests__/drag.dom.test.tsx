@@ -5,6 +5,7 @@ import { Board } from "../KanbanBoard/components/Board";
 import { Translate } from "../KanbanBoard/components/strings";
 import { PagingSummary } from "../KanbanBoard/hooks/useDatasetRecords";
 import { DRAG_THRESHOLD_PX, readDropTarget, useCardDrag } from "../KanbanBoard/hooks/useCardDrag";
+import { useKeyboardDrag } from "../KanbanBoard/hooks/useKeyboardDrag";
 import { BoardState, CardRecord, OptionValue } from "../KanbanBoard/model/types";
 
 const DRAFT = 122180000;
@@ -35,11 +36,12 @@ const BOARD: BoardState = {
 interface HarnessProps {
   readonly allowDrag: boolean;
   readonly onOpenRecord: (recordId: string) => void;
-  readonly onMove: (recordId: string, from: OptionValue | null, to: OptionValue | null) => void;
+  readonly onMove: (recordId: string, from: OptionValue | null, to: OptionValue | null) => Promise<boolean>;
 }
 
 const Harness: React.FC<HarnessProps> = ({ allowDrag, onOpenRecord, onMove }) => {
   const drag = useCardDrag();
+  const keyboard = useKeyboardDrag();
   return (
     <Board
       board={BOARD}
@@ -48,6 +50,8 @@ const Harness: React.FC<HarnessProps> = ({ allowDrag, onOpenRecord, onMove }) =>
       allowDrag={allowDrag}
       drag={drag.state}
       dispatchDrag={drag.dispatch}
+      keyboard={keyboard.state}
+      dispatchKeyboard={keyboard.dispatch}
       onOpenRecord={onOpenRecord}
       onMove={onMove}
     />
@@ -69,7 +73,7 @@ afterEach(() => {
 
 describe("readDropTarget", () => {
   beforeEach(() => {
-    render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={vi.fn()} />);
+    render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={vi.fn().mockResolvedValue(true)} />);
   });
 
   it("liest Schlüssel und Wert einer Optionsspalte", () => {
@@ -113,7 +117,7 @@ describe("Board, Zeigerbedienung", () => {
 
   it("öffnet den Datensatz, wenn unterhalb der Schwelle losgelassen wird", () => {
     const onOpenRecord = vi.fn();
-    const onMove = vi.fn();
+    const onMove = vi.fn().mockResolvedValue(true);
     render(<Harness allowDrag onOpenRecord={onOpenRecord} onMove={onMove} />);
     const element = grab(100);
 
@@ -127,7 +131,7 @@ describe("Board, Zeigerbedienung", () => {
 
   it("verschiebt statt zu öffnen, wenn über einer anderen Spalte losgelassen wird", () => {
     const onOpenRecord = vi.fn();
-    const onMove = vi.fn();
+    const onMove = vi.fn().mockResolvedValue(true);
     render(<Harness allowDrag onOpenRecord={onOpenRecord} onMove={onMove} />);
     const element = grab(100);
     vi.spyOn(document, "elementFromPoint").mockReturnValue(columnElement("option:122180001"));
@@ -142,7 +146,7 @@ describe("Board, Zeigerbedienung", () => {
   });
 
   it("erzeugt keinen Verschiebevorgang bei Ablage auf der Ursprungsspalte", () => {
-    const onMove = vi.fn();
+    const onMove = vi.fn().mockResolvedValue(true);
     render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={onMove} />);
     const element = grab(100);
     vi.spyOn(document, "elementFromPoint").mockReturnValue(columnElement("option:122180000"));
@@ -156,7 +160,7 @@ describe("Board, Zeigerbedienung", () => {
 
   it("bricht bei pointercancel ab, ohne zu verschieben oder zu öffnen", () => {
     const onOpenRecord = vi.fn();
-    const onMove = vi.fn();
+    const onMove = vi.fn().mockResolvedValue(true);
     render(<Harness allowDrag onOpenRecord={onOpenRecord} onMove={onMove} />);
     const element = grab(100);
     vi.spyOn(document, "elementFromPoint").mockReturnValue(columnElement("option:122180001"));
@@ -172,7 +176,7 @@ describe("Board, Zeigerbedienung", () => {
 
   it("nimmt keine Karte auf, solange allowDrag aus ist", () => {
     const onOpenRecord = vi.fn();
-    const onMove = vi.fn();
+    const onMove = vi.fn().mockResolvedValue(true);
     render(<Harness allowDrag={false} onOpenRecord={onOpenRecord} onMove={onMove} />);
     const element = grab(100);
     vi.spyOn(document, "elementFromPoint").mockReturnValue(columnElement("option:122180001"));
@@ -186,7 +190,7 @@ describe("Board, Zeigerbedienung", () => {
   });
 
   it("markiert die Zielspalte sichtbar, während darüber gezogen wird", () => {
-    render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={vi.fn()} />);
+    render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={vi.fn().mockResolvedValue(true)} />);
     const element = grab(100);
     vi.spyOn(document, "elementFromPoint").mockReturnValue(columnElement("option:122180001"));
 
@@ -198,7 +202,7 @@ describe("Board, Zeigerbedienung", () => {
   });
 
   it("zeigt während des Ziehens einen Drag-Layer", () => {
-    const { container } = render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={vi.fn()} />);
+    const { container } = render(<Harness allowDrag onOpenRecord={vi.fn()} onMove={vi.fn().mockResolvedValue(true)} />);
     const element = grab(100);
 
     expect(container.querySelector(".ayonto-kanban-drag-layer")).toBeNull();

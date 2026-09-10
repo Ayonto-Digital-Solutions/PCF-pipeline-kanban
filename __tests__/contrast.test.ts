@@ -10,6 +10,11 @@ import {
   parseHexColor,
   readableTextOn,
   toHexColor,
+  CARD_SURFACE,
+  COLUMN_SURFACE,
+  FOCUS_RING,
+  focusRingContrastOn,
+  MINIMUM_NON_TEXT_CONTRAST,
 } from "../KanbanBoard/model/contrast";
 
 const OPTION_COLOURS = [
@@ -122,5 +127,28 @@ describe("accentFor", () => {
 
   it("nimmt den Standardakzent, wenn die Farbe unlesbar ist", () => {
     expect(accentFor("rot")).toBe(DEFAULT_ACCENT);
+  });
+});
+
+describe("Fokusring, belegter Kontrast", () => {
+  it("hebt sich von der Kartenfläche ab", () => {
+    expect(focusRingContrastOn(CARD_SURFACE)).toBeGreaterThanOrEqual(MINIMUM_NON_TEXT_CONTRAST);
+  });
+
+  it("hebt sich von der Spaltenfläche ab", () => {
+    expect(focusRingContrastOn(COLUMN_SURFACE)).toBeGreaterThanOrEqual(MINIMUM_NON_TEXT_CONTRAST);
+  });
+
+  it.each(OPTION_COLOURS)("hebt sich auch vom Akzentbalken in %s ab", (colour) => {
+    expect(focusRingContrastOn(accentFor(colour))).toBeGreaterThanOrEqual(MINIMUM_NON_TEXT_CONTRAST);
+  });
+
+  it.each(OPTION_COLOURS)("hebt sich vom aufgehellten Spaltenkopf in %s ab", (colour) => {
+    expect(focusRingContrastOn(headerTintFor(colour))).toBeGreaterThanOrEqual(MINIMUM_NON_TEXT_CONTRAST);
+  });
+
+  it("trägt den Kontrast auf dunklem Grund über den hellen Anteil", () => {
+    expect(contrastRatio(FOCUS_RING, "#122b4a") ?? 0).toBeLessThan(MINIMUM_NON_TEXT_CONTRAST);
+    expect(focusRingContrastOn("#122b4a")).toBeGreaterThanOrEqual(MINIMUM_NON_TEXT_CONTRAST);
   });
 });

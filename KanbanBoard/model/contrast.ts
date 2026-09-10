@@ -4,6 +4,11 @@ export const ACCENT_PAPER = "#FFFFFF";
 export const HEADER_BASE = "#FFFFFF";
 export const HEADER_TINT_ALPHA = 0.18;
 export const MINIMUM_CONTRAST = 4.5;
+export const MINIMUM_NON_TEXT_CONTRAST = 3;
+export const FOCUS_RING = "#1B2340";
+export const FOCUS_RING_HALO = "#FFFFFF";
+export const CARD_SURFACE = "#FFFFFF";
+export const COLUMN_SURFACE = "#F4F5F8";
 
 export interface Rgb {
   readonly r: number;
@@ -90,4 +95,10 @@ export function readableTextOn(background: string): string {
     return ACCENT_INK;
   }
   return withPaper > withInk ? ACCENT_PAPER : ACCENT_INK;
+}
+
+export function focusRingContrastOn(background: string): number {
+  const inner = contrastRatio(FOCUS_RING, background) ?? 0;
+  const halo = contrastRatio(FOCUS_RING_HALO, background) ?? 0;
+  return Math.max(inner, halo);
 }

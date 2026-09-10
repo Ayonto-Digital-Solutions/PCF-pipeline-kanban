@@ -23,8 +23,10 @@ function renderCard(props: Partial<React.ComponentProps<typeof Card>> = {}) {
       translate={translate}
       draggable={false}
       dragging={false}
+      grabbed={false}
       onOpen={vi.fn()}
       onPointerDown={vi.fn()}
+      onKeyDown={vi.fn()}
       {...props}
     />
   );
