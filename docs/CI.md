@@ -65,6 +65,43 @@ voraus, dass der Vitest-UI-Server lauscht; dieses Repository startet ihn nirgend
 `vitest` ist derzeit an `@types/node` gebunden, siehe oben. Das ist eine bewusste, benannte
 Position, keine Nachlässigkeit.
 
+## Der Renderer und was er am Audit-Anteil ändert
+
+Ab M2 laufen Tests teilweise gegen ein gerendertes Dokument. Dafür kamen zwei
+Entwicklungsabhängigkeiten dazu:
+
+- `@testing-library/react@12.1.5`
+- `jsdom@30.0.1`
+
+**Warum RTL 12 und nicht die neueste Fassung.** `@testing-library/react@16` verlangt
+`@types/react-dom` in `^18.0.0 || ^19.0.0`. Die Fluent-8-Peers der übernommenen Werkzeugkette
+deckeln `@types/react-dom` bei `<19`, und die Plattform stellt React 16. RTL 12 ist die letzte
+Fassung mit `peerDependencies.react: <18.0.0`. Es gilt dieselbe Rangfolge wie bei `vitest`: die
+passende Version des Testwerkzeugs wählen, nicht die Werkzeugkette verbiegen.
+
+**Der zusätzliche Audit-Anteil ist null.** Nach der Aufnahme meldet `npm audit` unverändert
+vierzehn Funde, neun aus der Werkzeugkette und fünf aus `vitest`. Weder
+`@testing-library/react@12` noch `jsdom@30` bringen einen eigenen Fund mit. Der `audit`-Job weist
+das weiterhin getrennt aus; die Zahl ist also nicht geschätzt, sondern gemessen.
+
+**Was der Renderer am Testaufbau nötig macht.** `vitest.config.ts` trägt zwei Dinge, die beide aus
+der React-16-Bindung folgen:
+
+1. Ein Alias von `react/jsx-runtime` auf `react/jsx-runtime.js`. React 16.14 liefert die Datei,
+   führt aber kein `exports`-Feld, weshalb die ESM-Auflösung den erweiterungslosen Bezeichner nicht
+   findet. Fluent 9 und `@griffel/react` importieren genau diesen.
+2. `server.deps.inline` für `@griffel` und `@fluentui`. Ohne das transformiert vitest die Pakete
+   nicht und der Alias greift nicht. Auf `@griffel` allein einzuschränken reicht nicht, die
+   Fluent-Pakete importieren das JSX-Runtime ebenfalls.
+
+Im Build stellt sich die Frage nicht: dort werden React und Fluent als Platform Libraries
+ausgelagert, sichtbar als `external "Reactv16"` und `external "FluentUIReactv940"`. Das Auflösen
+der echten Pakete passiert ausschließlich im Test.
+
+Das Einbinden kostet Laufzeit: der Transformationsschritt der Dokumenttests liegt bei rund sechs
+Sekunden. Die Tests ohne Dokument laufen weiter in Millisekunden, weil `environmentMatchGlobs`
+`jsdom` nur auf `__tests__/**/*.dom.test.tsx` anwendet.
+
 ## Solution-Packaging, noch nicht umgesetzt
 
 Zu `M0-CI` gehört das Packen einer Dataverse-Solution über

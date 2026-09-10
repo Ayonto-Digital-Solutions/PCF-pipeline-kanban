@@ -70,6 +70,15 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   dahinterliegenden Logikalnamen aus `dataset.columns` auf.
 - 46 weitere Tests, zusammen 131.
 
+- Renderer für Dokumenttests: `@testing-library/react@12.1.5` und `jsdom@30.0.1`, angewandt über
+  `environmentMatchGlobs` nur auf `__tests__/**/*.dom.test.tsx`. RTL 12 ist die letzte Fassung mit
+  `peerDependencies.react: <18.0.0`; die neueste verlangt `@types/react-dom` ^18 oder ^19, was mit
+  den Fluent-8-Peers der Werkzeugkette kollidiert.
+- Erste Verwendung schließt die in M1 benannte Lücke: die Verdrahtung von `onClick` auf der Karte
+  und `onRetry` im `ErrorState` ist jetzt belegt, neun Dokumenttests, zusammen 140.
+- Der zusätzliche Audit-Anteil ist null. `npm audit` meldet unverändert vierzehn Funde, neun aus
+  der Werkzeugkette und fünf aus `vitest`. In `docs/CI.md` ausgewiesen.
+
 ### Fixed
 
 - `services/metadata.ts` behandelt `Color` als Nutzlast, nicht als Tragfähigkeitsprobe. Optionsfarben
