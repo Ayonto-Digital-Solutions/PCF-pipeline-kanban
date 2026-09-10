@@ -35,6 +35,16 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 - Test-Setup mit vitest, das übernommene Sample bringt keines mit. 34 Tests in `__tests__/`,
   darunter alle verbindlich geforderten Fälle.
 
+- Fließband `M0-CI`: `.github/workflows/ci.yml` führt bei jedem Push und bei jedem Pull Request
+  `npm ci`, `npm run build`, `npm run lint` und `npm test` aus. Node 20, abgeleitet aus
+  `engines.node >= 20` von `pcf-scripts` und `pcf-start`, weil weder `package.json` noch das
+  übernommene Sample ein `engines`-Feld führen.
+- Nicht blockierender `audit`-Job mit `scripts/audit-report.mjs`. Das Skript trennt die Funde nach
+  Herkunft: übernommene Werkzeugkette, selbst gewählte Abhängigkeiten, nicht zuordenbar.
+- `docs/CI.md` beschreibt beide Jobs, begründet die Node-Wahl und hält das Solution-Packaging über
+  `microsoft/powerplatform-actions` als dokumentierten Platzhalter fest, samt der Voraussetzungen,
+  die vorher zu klären sind.
+
 ### Changed
 
 - `.claude/commands/kanban-rebuild.md` auf v2. Alle Änderungen folgen aus den Audit-Befunden:

@@ -47,4 +47,13 @@ export default [
 			"@typescript-eslint/no-unused-vars": "off",
 		},
 	},
+	{
+		...typescriptEslint.configs.disableTypeChecked,
+		files: ["scripts/**/*.mjs"],
+		languageOptions: {
+			...typescriptEslint.configs.disableTypeChecked.languageOptions,
+			globals: globals.node,
+			sourceType: "module",
+		},
+	},
 ];
