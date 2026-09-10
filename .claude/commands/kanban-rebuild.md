@@ -18,6 +18,8 @@ Ausgeführter Meilenstein: `$ARGUMENTS`. Ohne Argument führst du `audit` aus.
 
 1. **Ein Meilenstein pro Aufruf.** Nach Abschluss stoppst du, berichtest und wartest. Kein Vorgriff auf den nächsten Meilenstein.
 2. **Keine erfundenen APIs.** Jede PCF-, Client-API- oder Manifest-Aussage, die du nicht bereits im Repo verifiziert hast, prüfst du per WebFetch gegen `learn.microsoft.com`, bevor du sie verwendest. Findest du keine Bestätigung, implementierst du sie nicht, sondern meldest die offene Frage.
+   Ist `learn.microsoft.com` nicht erreichbar, gilt `MicrosoftDocs/powerapps-docs` mit gepinnter Commit-SHA als zulässige Primärquelle. Learn rendert seine Seiten aus diesem Repository. Jede darauf gestützte Aussage nennt Dateipfad und SHA.
+   **Ausnahme:** Zulässige Versionsstrings der Platform Libraries und der Preview-gegen-GA-Status gelten damit **nicht** als bestätigt. Sie gelten erst als bestätigt, wenn der Build sie akzeptiert.
 3. **Keine erfundenen Logikalnamen.** Die im Abschnitt "Verifizierte Ausgangslage" genannten Namen sind autoritativ. Alles andere kommt zur Laufzeit aus Metadaten oder aus der Maker-Konfiguration, niemals aus einer Annahme im Code.
 4. **Kein `innerHTML` mit Daten.** Datensatzinhalte, Optionslabels und Feldwerte gehen ausschließlich durch React. Kein `dangerouslySetInnerHTML`.
 5. **Keine Kommentare im ausgelieferten Code.** Erklärungen gehören in `docs/` und `CHANGELOG.md`, nicht zwischen die Zeilen.
@@ -26,7 +28,10 @@ Ausgeführter Meilenstein: `$ARGUMENTS`. Ohne Argument führst du `audit` aus.
 8. **Namespace ist `Ayonto`**, nicht `Contoso`.
 9. **TypeScript strict.** Kein `any` außer für dokumentiert untypisierte Plattform-Objekte, dann mit lokalem Interface und einem Eintrag in `docs/UNTYPED-APIS.md`.
 10. **Jeder Meilenstein endet grün.** `npm run build` und `npm run lint` müssen fehlerfrei durchlaufen, sonst ist der Meilenstein nicht fertig.
+    Solange M1 kein baubares Projekt erzeugt hat, ist das Kriterium nicht anwendbar. Dann wird es als Befund gemeldet, nicht umgangen: kein Ersatzkommando, keine als grün ausgegebene Nichtausführung. Ab dem Ende von M1 gilt es unverändert.
 11. **Du fasst keine fremde Solution an.** Die TaskandDecision-Lösung ist nicht Teil dieses Repos und wird nicht verändert.
+12. **Optionsreihenfolge wird übernommen, nicht hergestellt.** Die Reihenfolge des von der Plattform zurückgegebenen Options-Arrays ist die Spaltenreihenfolge. Es wird nirgends sortiert, weder nach Wert noch nach Label. Dazu gehört ein Test mit absteigenden und mit gemischten Optionswerten, der fehlschlägt, sobald irgendwo sortiert wird.
+13. **Keine periodischen Check-ins ohne Anlass.** Nach dem Abschlussbericht eines Meilensteins wird gewartet, nicht gepollt. Kein selbst gestellter Wecker, kein wiederholtes Nachsehen ohne ein Ereignis, das es auslöst.
 
 ---
 
@@ -63,7 +68,11 @@ Aus dem Solution-Export `TaskandDecision 1.0.1.10 managed` und aus dem Upstream-
 - Spaltenreihenfolge nach numerischem Optionswert statt konfigurierter Reihenfolge
 - Optionsfarben werden ignoriert
 - alle Strings hart englisch im Code
-- `openForm` ohne `formParameters`, dadurch keine Vorbelegung von Zielspalte und Parent-Lookup
+- `openForm` ohne Formularparameter, dadurch keine Vorbelegung von Zielspalte und Parent-Lookup
+- `columnsLoadFailed` wird nie zurückgesetzt, ein einziger fehlgeschlagener Ladeversuch legt das Board bis zum Neuladen der Seite still.
+  **Akzeptanzkriterium:** Der Fehlerzustand wird bei jedem Ladeversuch zurückgesetzt, und der Fehlerzustand bietet einen Wiederholversuch an.
+- Anlegen erzeugt zwei Schreibvorgänge, Quick Create plus nachgelagertes `updateRecord`.
+  **Akzeptanzkriterium:** Das Anlegen erzeugt genau einen Schreibvorgang.
 
 ---
 
@@ -71,7 +80,7 @@ Aus dem Solution-Export `TaskandDecision 1.0.1.10 managed` und aus dem Upstream-
 
 **Konfiguration über `property-set` statt Freitextfelder.** Der Maker wählt Spalten aus, statt Logikalnamen zu tippen. Das ist der Kern des Umbaus: Tippfehler, falsche Feldtypen und "Spalte fehlt in der View" werden strukturell unmöglich.
 
-**Manifest-Zielbild** (Versionsstrings der Platform Libraries gegen die aktuelle Doku prüfen und ggf. korrigieren):
+**Manifest-Zielbild.** Die Versionsstrings der Platform Libraries gelten nach Regel 2 erst als bestätigt, wenn der Build sie akzeptiert.
 
 ```xml
 <control namespace="Ayonto" constructor="KanbanBoard" version="1.0.0"
@@ -92,14 +101,12 @@ Aus dem Solution-Export `TaskandDecision 1.0.1.10 managed` und aus dem Upstream-
     <type>DateAndTime.DateOnly</type>
   </type-group>
 
-  <property name="writeMode"     of-type="Enum"            usage="input" />
-  <property name="customApiName" of-type="SingleLine.Text" usage="input" required="false" />
   <property name="wipLimits"     of-type="SingleLine.Text" usage="input" required="false" />
   <property name="allowDrag"     of-type="TwoOptions"      usage="input" />
 
   <resources>
     <code path="index.ts" order="1" />
-    <platform-library name="React" version="16.8.6" />
+    <platform-library name="React" version="16.14.0" />
     <platform-library name="Fluent" version="9.46.2" />
     <resx path="strings/KanbanBoard.1033.resx" version="1.0.0" />
     <resx path="strings/KanbanBoard.1031.resx" version="1.0.0" />
@@ -148,18 +155,47 @@ Danach stoppen.
 
 ## M1 Fundament
 
-- Umstellung auf `control-type="virtual"` mit React und Fluent als Platform Libraries.
+### Aufgabe 0, zeitlich begrenzt: Spike auf die Optionsmetadaten
+
+Vor jeder Implementierung klärst du eine einzige Frage: Führt die von
+`context.utils.getEntityMetadata` zurückgegebene Attributsdefinition die Optionsliste mit, also
+Wert, Label und Farbe? Zeitgrenze ist ein Harness-Lauf. Lässt sich die Frage darin nicht
+beantworten, gilt der Spike als negativ.
+
+Das Ergebnis entscheidet die Implementierung in `services/metadata.ts`:
+
+- **Positiv**: `getEntityMetadata` ist die Quelle. Kein weiterer Weg wird gebaut.
+- **Negativ**: Der Metadaten-Endpunkt wird zum dokumentierten Ausnahmefall mit Eintrag in
+  `docs/UNTYPED-APIS.md`. Er wird in `services/metadata.ts` gekapselt und das Ergebnis gecacht.
+  Niemals ein roher `fetch` in einer Komponente.
+
+**In keinem Fall** werden die Optionen aus den vorhandenen Datensätzen abgeleitet. Eine Spalte,
+für die gerade kein Datensatz existiert, würde sonst fehlen, und genau die leere Spalte ist das
+Ziel eines Kanban-Boards.
+
+### Aufgabe 1: Scaffold
+
+```
+pac pcf init --namespace Ayonto --name KanbanBoard --template dataset --framework react
+```
+
+Danach Neuimplementierung gegen die Zielstruktur. `PipelineKanban/` bleibt unverändert im Repo als
+Referenz und wird **nicht** kopiert. Kein Baustein wird aus dem alten Control übernommen, weder
+Datei noch Funktion noch CSS-Regel.
+
+### Aufgabe 2: Fundament
+
 - Konfiguration vollständig über `property-set` gemäß Zielbild. Die Freitext-Properties `groupByField` und `valueField` entfallen ersatzlos.
-- Optionsmetadaten über `context.utils.getEntityMetadata` statt Roh-`fetch`.
-- Spaltenreihenfolge aus der konfigurierten Optionset-Reihenfolge, nicht nach numerischem Wert.
-- Optionsfarben aus den Metadaten als Spaltenakzent, mit lesbarem Kontrast gegen den Text.
+- Spaltenreihenfolge aus dem zurückgegebenen Options-Array, unsortiert, nach Regel 12.
+- Optionsfarben als Spaltenakzent, mit lesbarem Kontrast gegen den Text.
 - Labels werden getrimmt, bevor sie in den Spaltenkopf gehen.
 - Kartentitel, Untertitel und Badge aus den gebundenen Spalten, mit Fallback auf den Primärnamen, wenn ein Wert leer ist.
 - Alle sichtbaren Strings aus resx für 1033 und 1031.
 - `updateView` liest alle Properties neu, kein Zustand aus `init` bleibt hängen.
-- Unit-Tests für `grouping.ts`.
+- Der Fehlerzustand des Metadatenabrufs wird bei jedem Ladeversuch zurückgesetzt und bietet einen Wiederholversuch an.
+- Unit-Tests für `grouping.ts`, einschließlich des Reihenfolge-Tests aus Regel 12.
 
-**Definition of Done:** Board rendert im Harness mit CSV-Testdaten, gruppiert korrekt, Titel und Farben stimmen, `npm run build` und `npm run lint` grün, `CHANGELOG.md` gepflegt, Version auf `1.0.0`.
+**Definition of Done:** Board rendert im Harness mit CSV-Testdaten, gruppiert korrekt, Titel und Farben stimmen, `npm run build` und `npm run lint` grün, `CHANGELOG.md` gepflegt, Version auf `1.0.0`. Ab hier gilt Regel 10 uneingeschränkt.
 
 ## M2 Interaktion und Barrierefreiheit
 
@@ -170,19 +206,22 @@ Danach stoppen.
 - Paging über `dataset.paging` mit sichtbarem Zähler je Spalte statt stiller Kürzung.
 - `context.mode.trackContainerResize(true)` und Auswertung von `allocatedWidth` für horizontales Scrollen bei vielen Spalten.
 - Optimistischer Zustand als Zustandsautomat `pending / confirmed / reverted`, aufgelöst gegen den Dataset-Refresh. Der Upstream-Leak ist damit behoben.
+- **Randbedingung React 16.** Die Plattform stellt React 16 bereit, nicht 18. Das heißt: kein `createRoot`, kein `useSyncExternalStore`, kein automatisches Batching außerhalb von Event-Handlern. Der Zustandsautomat wird darauf ausgelegt und nicht auf Verhalten gebaut, das erst React 18 zusichert.
 - Tests für `reconcile.ts` inklusive des Falls "Fremdänderung während Pending".
 
 **Definition of Done:** Board ist ohne Maus vollständig bedienbar, Touch-Drag funktioniert, kein Zustandsverlust bei `updateView`, Tests grün.
 
 ## M3 Governance
 
-- Property `writeMode` mit den Werten `webapi` und `customapi`. Bei `customapi` wird eine Dataverse Custom API mit Datensatz-ID, Zielspalte und Zielwert aufgerufen, sodass Validierung serverseitig greift und für Formular und Board identisch ist.
 - `context.utils.hasEntityPrivilege` vor dem Rendern: kein Anlegen-Button ohne Create-Recht, kein Drag ohne Write-Recht, stattdessen ein erklärender Hinweis.
-- Anlegen mit `formParameters`: Zielspalte auf den Spaltenwert vorbelegt, Parent-Lookup vorbelegt, wenn das Control in einem Subgrid sitzt. Für den Parent-Kontext gilt Regel 9, das Objekt ist untypisiert.
+- Anlegen mit Formularparametern über `context.navigation.openForm(options, parameters)`: Zielspalte auf den Spaltenwert vorbelegt, Parent-Lookup vorbelegt, wenn das Control in einem Subgrid sitzt. Der zweite Parameter heißt in PCF `parameters`, nicht `formParameters`; ungültige Parameter lösen einen Fehler aus. Für den Parent-Kontext gilt Regel 9, sofern er über ein untypisiertes Objekt kommt.
 - Fehler und Rückfragen über `context.navigation.openErrorDialog` und `openConfirmDialog` statt `window.alert` und `window.confirm`.
-- `docs/GOVERNANCE.md`: welche clientseitige Logik ein Drag umgeht und wie `customapi` das schließt.
+- Rollback des optimistischen Zustands bei Serverablehnung: Der Zustandsautomat aus M2 geht auf `reverted`, die Karte kehrt sichtbar in ihre Ausgangsspalte zurück, und der Grund wird angesagt.
+- `docs/GOVERNANCE.md`: welche clientseitige Logik ein Drag umgeht und wo die Grenze dieses Repos verläuft.
 
-**Definition of Done:** Beide Schreibmodi nachweislich funktionsfähig, Rechteprüfung greift, Anlegen erzeugt einen vollständigen Datensatz ohne Nacharbeit.
+**Ausdrücklich außerhalb dieses Repos:** die serverseitige Durchsetzung auf `Update` der Tabelle. Ein Drag umgeht clientseitige Formularlogik; das lässt sich nur serverseitig schließen, und das ist nicht Teil dieses Controls. `docs/GOVERNANCE.md` benennt die Lücke, schließt sie aber nicht.
+
+**Definition of Done:** Rechteprüfung greift, Anlegen erzeugt mit genau einem Schreibvorgang einen vollständigen Datensatz ohne Nacharbeit, eine Serverablehnung führt zu einem sichtbaren Rollback.
 
 ## M4 Kür
 

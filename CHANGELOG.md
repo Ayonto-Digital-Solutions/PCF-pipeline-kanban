@@ -17,6 +17,19 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 - `.claude/commands/kanban-rebuild.md`: Slash-Command, der den Umbau in den Meilensteinen `audit`
   sowie `M1` bis `M4` führt.
 
+### Changed
+
+- `.claude/commands/kanban-rebuild.md` auf v2. Alle Änderungen folgen aus den Audit-Befunden:
+  Regel 2 lässt `MicrosoftDocs/powerapps-docs` mit gepinnter SHA als Ersatzquelle zu, nimmt aber
+  Versionsstrings und den Preview-gegen-GA-Status davon aus; Regel 10 ist bis zum Ende von M1 nicht
+  anwendbar und wird als Befund gemeldet statt umgangen; neue Regel 12 zur Optionsreihenfolge und
+  Regel 13 gegen periodische Check-ins; React im Manifest-Zielbild auf `16.14.0`, `writeMode` und
+  `customApiName` ersatzlos entfernt; M1 auf Scaffolding über `pac pcf init` umgestellt und um eine
+  zeitlich begrenzte Aufgabe 0 zum Metadaten-Spike ergänzt; M2 um die Randbedingung React 16
+  erweitert; M3 auf Rechteprüfung, Anlegen mit Formularparametern, Plattformdialoge und Rollback
+  zugeschnitten, die serverseitige Durchsetzung ausdrücklich außerhalb dieses Repos; zwei
+  Audit-Zusatzbefunde mit Akzeptanzkriterium in die Defektliste gehoben.
+
 ### Notes
 
 - Der Meilenstein `audit` ändert keinen Code. Die Manifest-Version bleibt deshalb bei `0.4.0`;
