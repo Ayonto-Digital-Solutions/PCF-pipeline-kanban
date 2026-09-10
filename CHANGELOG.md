@@ -28,6 +28,13 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   Beides wird in M1 Aufgabe 3 vollständig ersetzt.
 - `npm run build` und `npm run lint` laufen grün. Damit ist Regel 10 ab hier anwendbar.
 
+- Modellschicht `KanbanBoard/model/`, frei von PCF-Typen und ohne Import aus
+  `ComponentFramework`. `types.ts` beschreibt Spalte, Karte, Board-Zustand und Verschiebevorgang,
+  `grouping.ts` ordnet Datensätze Spalten zu, `reconcile.ts` führt den Zustandsautomaten
+  `pending / confirmed / reverted`.
+- Test-Setup mit vitest, das übernommene Sample bringt keines mit. 34 Tests in `__tests__/`,
+  darunter alle verbindlich geforderten Fälle.
+
 ### Changed
 
 - `.claude/commands/kanban-rebuild.md` auf v2. Alle Änderungen folgen aus den Audit-Befunden:

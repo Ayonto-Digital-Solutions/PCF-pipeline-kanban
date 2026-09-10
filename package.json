@@ -10,13 +10,15 @@
 		"rebuild": "pcf-scripts rebuild",
 		"start": "pcf-scripts start",
 		"start:watch": "pcf-scripts start watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"refreshTypes": "pcf-scripts refreshTypes"
 	},
 	"dependencies": {
 		"@fluentui/react": "8.121.1",
 		"@fluentui/react-components": "9.4.0",
-		"@fluentui/react-migration-v8-v9": "9.4.20",
 		"@fluentui/react-field": "9.1.74",
+		"@fluentui/react-migration-v8-v9": "9.4.20",
 		"react": "16.14.0",
 		"react-dom": "^16.14.0"
 	},
@@ -32,7 +34,8 @@
 		"pcf-scripts": "^1",
 		"pcf-start": "^1",
 		"typescript": "^4.9.5",
-		"typescript-eslint": "^8.18.1"
+		"typescript-eslint": "^8.18.1",
+		"vitest": "^2.1.9"
 	},
 	"overrides": {
 		"@types/react": "^16.14.62",
