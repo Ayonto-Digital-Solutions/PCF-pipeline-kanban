@@ -1,7 +1,7 @@
 ---
 description: Rebuild the Pipeline Kanban PCF fork into the Ayonto Kanban Board control
 argument-hint: [audit|M1|M2|M0-CI|M3|M4]
-allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(npm:*), Bash(node:*), Bash(npx:*), Bash(pac:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(npm:*), Bash(node:*), Bash(npx:*), Bash(pac:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git clone:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(gh pr:*)
 ---
 
 # Auftrag
@@ -33,7 +33,11 @@ Ausgeführter Meilenstein: `$ARGUMENTS`. Ohne Argument führst du `audit` aus.
 11. **Du fasst keine fremde Solution an.** Die TaskandDecision-Lösung ist nicht Teil dieses Repos und wird nicht verändert.
 12. **Optionsreihenfolge wird übernommen, nicht hergestellt.** Die Reihenfolge des von der Plattform zurückgegebenen Options-Arrays ist die Spaltenreihenfolge. Es wird nirgends sortiert, weder nach Wert noch nach Label. Dazu gehört ein Test mit absteigenden und mit gemischten Optionswerten, der fehlschlägt, sobald irgendwo sortiert wird.
 13. **Keine periodischen Check-ins ohne Anlass.** Nach dem Abschlussbericht eines Meilensteins wird gewartet, nicht gepollt. Kein selbst gestellter Wecker, kein wiederholtes Nachsehen ohne ein Ereignis, das es auslöst.
-14. **Herkunft des Scaffolds.** Ist die Power Platform CLI nicht verfügbar, wird der Projektdateisatz aus `microsoft/PowerApps-Samples`, Teilbaum `component-framework`, mit gepinnter Commit-SHA übernommen. Handgeschriebene Projektdateien bleiben ausgeschlossen. Übernommen werden ausschließlich die Werkzeugkettendateien, niemals Beispielkomponenten oder Beispiel-Properties. Jede übernommene Datei wird mit Sample-Pfad und SHA belegt, jede Abweichung vom Original einzeln benannt. Weichen im Sample gepinnte Versionen von diesem Command ab, gilt das Sample.
+14. **Herkunft des Scaffolds.** Ist die Power Platform CLI nicht verfügbar, wird der Projektdateisatz aus `microsoft/PowerApps-Samples`, Teilbaum `component-framework`, mit gepinnter Commit-SHA übernommen. Jede übernommene Datei wird mit Sample-Pfad und SHA belegt, jede Abweichung vom Original einzeln benannt.
+    **Übernommen wird ausschließlich die Werkzeugkette**, also `package.json`, `tsconfig.json`, `pcfconfig.json`, die ESLint-Konfiguration und die `.pcfproj`. Handgeschriebene Werkzeugkettendateien bleiben ausgeschlossen.
+    **Manifest und `index.ts` sind Deliverable**, kein Scaffold. Sie werden selbst geschrieben, niemals aus einem Sample übernommen, und enthalten weder Beispielkomponenten noch Beispiel-Properties.
+    **Laufzeitentscheidungen des Controls sind keine Werkzeugkette.** Das gilt namentlich für die Versionen der Platform Libraries. Sie folgen nicht automatisch dem Sample, sondern werden begründet entschieden. Ein Sample belegt, was gebaut werden kann, nicht was gebaut werden soll.
+15. **Platform-Library-Versionen laufen im Gleichschritt.** Die in `package.json` gepinnte Version einer Platform Library und die im Manifest deklarierte Version derselben Bibliothek müssen übereinstimmen. Eine Anhebung erfolgt für beide gemeinsam und mit Begründung im Changelog. Gegen eine neuere API zu bauen als zur Laufzeit angefordert wird, ist ein Fehler, kein Spielraum.
 
 ---
 
@@ -232,6 +236,10 @@ Einzuordnen vor M3. Der Meilenstein holt nach, was die Arbeitsumgebung nicht lei
   `npm test` ausführt. Rot bedeutet rot, kein `continue-on-error`.
 - Solution-Packaging über `microsoft/powerplatform-actions`. Der Workflow erzeugt aus dem
   gebauten Control eine Solution und legt sie als Artefakt ab.
+- `npm audit` als eigener Schritt. Funde, die aus `pcf-scripts` und dessen transitiven
+  Abhängigkeiten stammen, werden **getrennt** ausgewiesen von Funden aus Abhängigkeiten, die
+  dieses Repository selbst gewählt hat. Nur die zweite Gruppe ist unmittelbar zu verantworten;
+  die erste wird beobachtet und beim Anheben von `pcf-scripts` erneut geprüft.
 - `docs/CI.md`: was der Workflow tut, welche Secrets er braucht und wie ein Lauf zu lesen ist.
 
 **`pac` läuft ausschließlich hier.** In der Arbeitsumgebung wird die Power Platform CLI weder

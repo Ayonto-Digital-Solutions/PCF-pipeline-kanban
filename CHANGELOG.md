@@ -51,6 +51,15 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   Solution-Packaging über `microsoft/powerplatform-actions`, und die Festlegung, dass `pac`
   ausschließlich dort läuft.
 
+- `.claude/commands/kanban-rebuild.md` auf v4. `allowed-tools` um die schreibenden git-Kommandos
+  und `gh pr` erweitert. Regel 14 trennt jetzt sauber: übernommen wird ausschließlich die
+  Werkzeugkette, Manifest und `index.ts` sind Deliverable und werden selbst geschrieben, und
+  Laufzeitentscheidungen des Controls — namentlich die Platform-Library-Versionen — folgen nicht
+  automatisch dem Sample. Neue Regel 15: die in `package.json` gepinnte und die im Manifest
+  deklarierte Version derselben Platform Library müssen übereinstimmen und werden gemeinsam
+  angehoben. `M0-CI` bekommt einen `npm audit`-Schritt, der transitive Funde aus `pcf-scripts`
+  getrennt von selbst gewählten Abhängigkeiten ausweist.
+
 ### Notes
 
 - Der Meilenstein `audit` ändert keinen Code. Die Manifest-Version bleibt deshalb bei `0.4.0`;
