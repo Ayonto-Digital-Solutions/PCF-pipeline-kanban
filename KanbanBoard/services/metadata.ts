@@ -160,3 +160,17 @@ export function createOptionMetadataService(source: MetadataSource): OptionMetad
     },
   };
 }
+
+export async function fetchOptionSetMetadata(entityName: string, attributeName: string): Promise<unknown> {
+  const url =
+    `/api/data/v9.2/EntityDefinitions(LogicalName='${entityName}')` +
+    `/Attributes(LogicalName='${attributeName}')` +
+    `/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=OptionSet`;
+  const response = await fetch(url, {
+    headers: { "OData-MaxVersion": "4.0", "OData-Version": "4.0", Accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  return response.json();
+}

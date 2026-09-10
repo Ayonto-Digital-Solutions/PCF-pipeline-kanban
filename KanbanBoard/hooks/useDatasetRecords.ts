@@ -15,14 +15,27 @@ export interface DatasetPagingLike {
   readonly totalResultCount: number;
 }
 
+export interface DatasetColumnLike {
+  readonly alias: string;
+  readonly name: string;
+}
+
 export interface DatasetLike {
   readonly loading: boolean;
   readonly error: boolean;
   readonly errorMessage?: string;
+  readonly columns: readonly DatasetColumnLike[];
   readonly sortedRecordIds: readonly string[];
   readonly records: Readonly<Record<string, DatasetRecordLike | undefined>>;
   readonly paging: DatasetPagingLike;
 }
+
+export const COLUMN_ALIAS = {
+  groupBy: "groupBy",
+  cardTitle: "cardTitle",
+  cardSubtitle: "cardSubtitle",
+  cardBadge: "cardBadge",
+} as const;
 
 export interface ColumnBinding {
   readonly groupBy: string;
@@ -94,6 +107,22 @@ export function readPaging(dataset: DatasetLike, loadedCount: number): PagingSum
     hasPreviousPage: dataset.paging.hasPreviousPage,
     pageSize: dataset.paging.pageSize,
   };
+}
+
+export function resolveBinding(dataset: DatasetLike): ColumnBinding {
+  const bound = new Set(dataset.columns.map((column) => column.alias));
+  const optional = (alias: string): string | null => (bound.has(alias) ? alias : null);
+  return {
+    groupBy: COLUMN_ALIAS.groupBy,
+    title: COLUMN_ALIAS.cardTitle,
+    subtitle: optional(COLUMN_ALIAS.cardSubtitle),
+    badge: optional(COLUMN_ALIAS.cardBadge),
+  };
+}
+
+export function resolveGroupByAttribute(dataset: DatasetLike): string | null {
+  const column = dataset.columns.find((candidate) => candidate.alias === COLUMN_ALIAS.groupBy);
+  return column === undefined ? null : column.name;
 }
 
 export function useDatasetRecords(dataset: DatasetLike, binding: ColumnBinding): DatasetBinding {

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  COLUMN_ALIAS,
   ColumnBinding,
   DatasetLike,
   DatasetRecordLike,
   readPaging,
+  resolveBinding,
+  resolveGroupByAttribute,
   toCardRecords,
 } from "../KanbanBoard/hooks/useDatasetRecords";
 
@@ -26,11 +29,13 @@ function record(id: string, values: Record<string, unknown>, formatted: Record<s
 function dataset(
   ids: string[],
   records: Record<string, DatasetRecordLike | undefined>,
-  paging: Partial<DatasetLike["paging"]> = {}
+  paging: Partial<DatasetLike["paging"]> = {},
+  columns: string[] = ["groupBy", "cardTitle", "cardSubtitle", "cardBadge"]
 ): DatasetLike {
   return {
     loading: false,
     error: false,
+    columns: columns.map((alias) => ({ alias, name: `logical_${alias}` })),
     sortedRecordIds: ids,
     records,
     paging: { hasNextPage: false, hasPreviousPage: false, pageSize: 20, totalResultCount: -1, ...paging },
@@ -114,5 +119,38 @@ describe("readPaging", () => {
     expect(summary.hasNextPage).toBe(true);
     expect(summary.hasPreviousPage).toBe(true);
     expect(summary.pageSize).toBe(50);
+  });
+});
+
+describe("resolveBinding, die property-set-Aliasse", () => {
+  it("bindet Gruppierung und Titel fest, weil beide Pflicht sind", () => {
+    const binding = resolveBinding(dataset([], {}, {}, ["groupBy", "cardTitle"]));
+
+    expect(binding.groupBy).toBe(COLUMN_ALIAS.groupBy);
+    expect(binding.title).toBe(COLUMN_ALIAS.cardTitle);
+  });
+
+  it("lässt einen nicht gebundenen optionalen Alias null", () => {
+    const binding = resolveBinding(dataset([], {}, {}, ["groupBy", "cardTitle"]));
+
+    expect(binding.subtitle).toBeNull();
+    expect(binding.badge).toBeNull();
+  });
+
+  it("nimmt einen gebundenen optionalen Alias auf", () => {
+    const binding = resolveBinding(dataset([], {}, {}, ["groupBy", "cardTitle", "cardBadge"]));
+
+    expect(binding.subtitle).toBeNull();
+    expect(binding.badge).toBe(COLUMN_ALIAS.cardBadge);
+  });
+});
+
+describe("resolveGroupByAttribute", () => {
+  it("liefert den Logikalnamen hinter dem groupBy-Alias", () => {
+    expect(resolveGroupByAttribute(dataset([], {}, {}, ["groupBy", "cardTitle"]))).toBe("logical_groupBy");
+  });
+
+  it("liefert null, wenn die Gruppierungsspalte nicht gebunden ist", () => {
+    expect(resolveGroupByAttribute(dataset([], {}, {}, ["cardTitle"]))).toBeNull();
   });
 });

@@ -1,15 +1,47 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="Ayonto" constructor="KanbanBoard" version="1.0.0" display-name-key="Kanban Board" description-key="Kanban board for a Dataverse view, grouped by a choice column" control-type="virtual">
-    <data-set name="records" display-name-key="Records" />
+  <control namespace="Ayonto" constructor="KanbanBoard" version="1.0.0"
+           display-name-key="Control_Name" description-key="Control_Description"
+           control-type="virtual">
+
+    <data-set name="records" display-name-key="Records_Name">
+      <property-set name="groupBy" display-name-key="GroupBy_Name" description-key="GroupBy_Description"
+                    of-type="OptionSet" usage="bound" required="true" />
+      <property-set name="cardTitle" display-name-key="CardTitle_Name" description-key="CardTitle_Description"
+                    of-type-group="titleTypes" usage="input" required="true" />
+      <property-set name="cardSubtitle" display-name-key="CardSubtitle_Name" description-key="CardSubtitle_Description"
+                    of-type-group="titleTypes" usage="input" required="false" />
+      <property-set name="cardBadge" display-name-key="CardBadge_Name" description-key="CardBadge_Description"
+                    of-type-group="titleTypes" usage="input" required="false" />
+      <property-set name="sumValue" display-name-key="SumValue_Name" description-key="SumValue_Description"
+                    of-type="Currency" usage="input" required="false" />
+    </data-set>
+
+    <type-group name="titleTypes">
+      <type>SingleLine.Text</type>
+      <type>Lookup.Simple</type>
+      <type>OptionSet</type>
+      <type>DateAndTime.DateOnly</type>
+    </type-group>
+
+    <property name="wipLimits" display-name-key="WipLimits_Name" description-key="WipLimits_Description"
+              of-type="SingleLine.Text" usage="input" required="false" />
+    <property name="allowDrag" display-name-key="AllowDrag_Name" description-key="AllowDrag_Description"
+              of-type="TwoOptions" usage="input" required="false" />
+
     <resources>
       <code path="index.ts" order="1" />
+      <css path="css/KanbanBoard.css" order="1" />
       <platform-library name="React" version="16.14.0" />
       <platform-library name="Fluent" version="9.4.0" />
+      <resx path="strings/KanbanBoard.1033.resx" version="1.0.0" />
+      <resx path="strings/KanbanBoard.1031.resx" version="1.0.0" />
     </resources>
+
     <feature-usage>
       <uses-feature name="WebAPI" required="true" />
       <uses-feature name="Utility" required="true" />
     </feature-usage>
+
   </control>
 </manifest>

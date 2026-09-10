@@ -57,6 +57,19 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   das empirische Ergebnis offen ist, bis es aus einer echten Umgebung vorliegt.
 - 50 weitere Tests, zusammen 84.
 
+- Komponenten `Board`, `Column`, `Card`, `EmptyState`, `ErrorState` und `BoardRoot`. Alles läuft
+  über React, kein `dangerouslySetInnerHTML`, kein sichtbarer String im Quelltext.
+- `model/contrast.ts`: die Optionsfarbe wird als Akzentbalken in voller Sättigung und als 18 Prozent
+  aufgehellter Ton für den Spaltenkopf verwendet. Der Kopftext sitzt auf dem aufgehellten Ton, für
+  den der Kontrast belegt ist.
+- `strings/KanbanBoard.1033.resx` und `strings/KanbanBoard.1031.resx` mit deckungsgleichen
+  Schlüsselmengen, `css/KanbanBoard.css` durchgehend unter `.ayonto-kanban-root` gescopt,
+  `ControlManifest.Input.xml` vollständig nach Zielbild mit Fluent `9.4.0`, und `index.ts` ersetzt
+  den Platzhalter.
+- `resolveBinding` und `resolveGroupByAttribute` lösen die `property-set`-Aliasse und den
+  dahinterliegenden Logikalnamen aus `dataset.columns` auf.
+- 46 weitere Tests, zusammen 131.
+
 ### Fixed
 
 - `services/metadata.ts` behandelt `Color` als Nutzlast, nicht als Tragfähigkeitsprobe. Optionsfarben
