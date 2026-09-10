@@ -45,6 +45,18 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   `microsoft/powerplatform-actions` als dokumentierten Platzhalter fest, samt der Voraussetzungen,
   die vorher zu klären sind.
 
+- Plattformgrenze: `KanbanBoard/services/` und `KanbanBoard/hooks/`. `metadata.ts` mit der
+  Fallback-Kette und einmaligem Logging des greifenden Zweigs, `privileges.ts` als Kapselung von
+  `hasEntityPrivilege` samt der dokumentierten Vorbedingung, `useOptionMetadata` mit
+  zurücksetzbarem Fehlerzustand, `useDatasetRecords` mit der Übersetzung in die Modelltypen und der
+  Auswertung von `dataset.paging`, `useOptimisticMove` als Anbindung von `reconcile.ts` an
+  `context.webAPI.updateRecord`.
+- `docs/UNTYPED-APIS.md` als Register nach Regel 9. Es hält fest, dass derzeit kein `any` im
+  Quelltext steht und die Ausnahme nicht in Anspruch genommen wird.
+- `docs/API-NOTES.md` beschreibt beide Zweige der Fallback-Kette und hält ausdrücklich fest, dass
+  das empirische Ergebnis offen ist, bis es aus einer echten Umgebung vorliegt.
+- 50 weitere Tests, zusammen 84.
+
 ### Changed
 
 - `.claude/commands/kanban-rebuild.md` auf v2. Alle Änderungen folgen aus den Audit-Befunden:

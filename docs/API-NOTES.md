@@ -227,6 +227,39 @@ liefert null Treffer für „Custom API" und für `webAPI.execute`. Der in M3 vo
 
 ---
 
+## Die Fallback-Kette für die Optionsmetadaten
+
+Umgesetzt in `KanbanBoard/services/metadata.ts`. Sie existiert, weil die Dokumentation eine Frage
+offenlässt und wir sie nicht durch eine Annahme ersetzen.
+
+**Die offene Frage.** `OptionDescriptor` mit `Value`, `Label` und `Color` ist dokumentiert.
+`ControlAttributes.OptionSet` ist als Weg dorthin dokumentiert. `EntityMetadata.metadata` ist als
+`Dictionary<AttributeMetadata>` dokumentiert, und `AttributeMetadata` führt **keine**
+Options-Eigenschaft. Ob die von `context.utils.getEntityMetadata` zurückgegebene
+Attributsdefinition zur Laufzeit trotzdem eine Optionsliste mitführt, sagt die Dokumentation
+nirgends. **Das empirische Ergebnis steht aus**, bis es aus einer echten Umgebung vorliegt; im
+Test-Harness lässt es sich nicht beantworten.
+
+**Zweig 1, bevorzugt.** `context.utils.getEntityMetadata(entityName, [attributeName])`. Aus der
+Antwort wird `metadata[attributeName].OptionSet` gelesen. Der Zweig gilt als tragfähig, wenn eine
+nicht leere Optionsliste gefunden wird **und jeder** Eintrag einen endlichen numerischen `Value`,
+ein `Label` als Zeichenkette oder in der `UserLocalizedLabel`-Form, und eine vorhandene
+`Color`-Eigenschaft trägt. `Color` darf `null` sein, fehlen darf sie nicht. Wirft der Aufruf, gilt
+das als Fehlanzeige, nicht als Fehler.
+
+**Zweig 2, nur bei Fehlanzeige.** Der Metadaten-Endpunkt, gekapselt in `services/metadata.ts` und
+nirgends sonst. Ein roher `fetch` in einer Komponente bleibt ausgeschlossen.
+
+**Gemeinsam für beide Zweige.** Das Ergebnis wird je `entityName:attributeName` zwischengespeichert.
+Welcher Zweig gegriffen hat, wird **einmalig** protokolliert, nicht bei jedem Aufruf. Liefert kein
+Zweig Optionen, wirft der Dienst. Eine leere Optionsliste gilt als Fehlanzeige, nicht als Ergebnis.
+
+**In keinem Zweig** werden Optionen aus den vorhandenen Datensätzen abgeleitet. Eine Spalte, für die
+gerade kein Datensatz existiert, würde sonst fehlen, und genau die leere Spalte ist das Ziel eines
+Kanban-Boards.
+
+---
+
 ## Dokumentierte Vorgaben, die den Umbau betreffen
 [Learn Best practices](https://learn.microsoft.com/en-us/power-apps/developer/component-framework/code-components-best-practices)
 
