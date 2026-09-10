@@ -9,7 +9,7 @@ import typescriptEslint from "typescript-eslint";
 /** @type {import('eslint').Linter.Config[]} */
 export default [
 	{
-		ignores: ["**/generated", "PipelineKanban/**"],
+		ignores: ["**/generated", "reference/**"],
 	},
 	eslintjs.configs.recommended,
 	...typescriptEslint.configs.recommendedTypeChecked,

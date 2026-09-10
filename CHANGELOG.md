@@ -60,6 +60,21 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   angehoben. `M0-CI` bekommt einen `npm audit`-Schritt, der transitive Funde aus `pcf-scripts`
   getrennt von selbst gewählten Abhängigkeiten ausweist.
 
+- Das Upstream-Control liegt jetzt unter `reference/PipelineKanban/`, per `git mv` verschoben,
+  Inhalt aller Dateien byteweise unverändert. Die Lint-Ausnahme zeigt auf `reference/**`, und
+  `tsconfig.json` schließt `./reference` aus, damit TypeScript die Referenz nicht mehr in sein
+  Programm zieht. Der Dateiname des Referenz-Manifests trägt die Endung `.reference`, weil
+  `pcf-scripts` Controls allein am Dateinamen `ControlManifest.Input.xml` erkennt, die Suche fest
+  im Projektstamm startet und nur `node_modules` ausschließt. `out/controls/` enthält damit nur
+  noch `KanbanBoard`.
+- Fluent gemeinsam auf `9.4.0` gesetzt, in `package.json` und im Manifest. Grund: Regel 15
+  verlangt Gleichstand, und gegen `9.46.2` zu bauen, während das Manifest `9.4.0` anfordert, hieße
+  gegen eine neuere API zu bauen als zur Laufzeit bereitsteht. `9.4.0` ist die konservative Wahl
+  und liegt im dokumentierten Bereich `>=9.4.0 <=9.46.2`.
+- React aus demselben Grund auf `16.14.0` festgelegt statt `^16.14.0`, in `dependencies` und im
+  `overrides`-Block. Der Override musste mitgezogen werden, sonst bricht `npm install` mit
+  `EOVERRIDE` ab.
+
 ### Notes
 
 - Der Meilenstein `audit` ändert keinen Code. Die Manifest-Version bleibt deshalb bei `0.4.0`;

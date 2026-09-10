@@ -14,10 +14,10 @@
 	},
 	"dependencies": {
 		"@fluentui/react": "8.121.1",
-		"@fluentui/react-components": "9.46.2",
+		"@fluentui/react-components": "9.4.0",
 		"@fluentui/react-migration-v8-v9": "9.4.20",
 		"@fluentui/react-field": "9.1.74",
-		"react": "^16.14.0",
+		"react": "16.14.0",
 		"react-dom": "^16.14.0"
 	},
 	"devDependencies": {
@@ -36,7 +36,7 @@
 	},
 	"overrides": {
 		"@types/react": "^16.14.62",
-		"react": "^16.14.0",
+		"react": "16.14.0",
 		"react-dom": "^16.14.0"
 	}
 }
