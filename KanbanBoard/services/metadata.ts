@@ -56,9 +56,6 @@ function toColumnDefinition(raw: unknown): ColumnDefinition | null {
   if (label === null) {
     return null;
   }
-  if (!("Color" in raw)) {
-    return null;
-  }
   const color: unknown = raw.Color;
   return {
     value,

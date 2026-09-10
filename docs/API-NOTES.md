@@ -242,10 +242,15 @@ Test-Harness lässt es sich nicht beantworten.
 
 **Zweig 1, bevorzugt.** `context.utils.getEntityMetadata(entityName, [attributeName])`. Aus der
 Antwort wird `metadata[attributeName].OptionSet` gelesen. Der Zweig gilt als tragfähig, wenn eine
-nicht leere Optionsliste gefunden wird **und jeder** Eintrag einen endlichen numerischen `Value`,
-ein `Label` als Zeichenkette oder in der `UserLocalizedLabel`-Form, und eine vorhandene
-`Color`-Eigenschaft trägt. `Color` darf `null` sein, fehlen darf sie nicht. Wirft der Aufruf, gilt
+nicht leere Optionsliste gefunden wird **und jeder** Eintrag einen endlichen numerischen `Value`
+und ein `Label` als Zeichenkette oder in der `UserLocalizedLabel`-Form trägt. Wirft der Aufruf, gilt
 das als Fehlanzeige, nicht als Fehler.
+
+**`Color` ist Nutzlast, keine Tragfähigkeitsprobe.** Optionsfarben sind in Dataverse optional: ein
+Optionset kann Optionen ohne gesetzte Farbe führen, und das ist der Normalfall, kein Mangel. Eine
+fehlende oder unbrauchbare Farbe darf deshalb weder den Zweig verwerfen noch einen zweiten
+Netzaufruf auslösen — der Endpunkt hätte für dieselbe Option ebenso wenig eine Farbe. Fehlt die
+Farbe, steht `null` im Modell, und die Spalte bekommt den Standardakzent.
 
 **Zweig 2, nur bei Fehlanzeige.** Der Metadaten-Endpunkt, gekapselt in `services/metadata.ts` und
 nirgends sonst. Ein roher `fetch` in einer Komponente bleibt ausgeschlossen.

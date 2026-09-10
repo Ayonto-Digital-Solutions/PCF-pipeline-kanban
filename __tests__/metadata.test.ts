@@ -41,20 +41,31 @@ describe("Zweigauswahl der Fallback-Kette", () => {
     expect(source.fetchMetadataEndpoint).not.toHaveBeenCalled();
   });
 
-  it("fällt auf den Metadata-Endpunkt zurück, wenn die Farbe fehlt", async () => {
+  it("bleibt bei getEntityMetadata, wenn nur die Farbe fehlt", async () => {
     const source = makeSource({
       getEntityMetadata: vi
         .fn()
         .mockResolvedValue(entityMetadataCarrying("eo_progress", [{ Value: 1, Label: "Draft" }])),
-      fetchMetadataEndpoint: vi
-        .fn()
-        .mockResolvedValue({ OptionSet: { Options: [optionWithColor(1, "Draft", "#cfe3a8")] } }),
     });
 
     const result = await createOptionMetadataService(source).load("eo_decisionassessment", "eo_progress");
 
-    expect(result.branch).toBe("metadataEndpoint");
-    expect(source.fetchMetadataEndpoint).toHaveBeenCalledTimes(1);
+    expect(result.branch).toBe("entityMetadata");
+    expect(result.options).toEqual([{ value: 1, label: "Draft", color: null }]);
+    expect(source.fetchMetadataEndpoint).not.toHaveBeenCalled();
+  });
+
+  it("nimmt eine unbrauchbare Farbe als fehlend, ohne den Zweig zu verwerfen", async () => {
+    const source = makeSource({
+      getEntityMetadata: vi
+        .fn()
+        .mockResolvedValue(entityMetadataCarrying("eo_progress", [{ Value: 1, Label: "Draft", Color: 42 }])),
+    });
+
+    const result = await createOptionMetadataService(source).load("eo_decisionassessment", "eo_progress");
+
+    expect(result.branch).toBe("entityMetadata");
+    expect(result.options[0].color).toBeNull();
   });
 
   it("fällt zurück, wenn getEntityMetadata die Optionsliste gar nicht mitführt", async () => {

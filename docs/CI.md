@@ -34,9 +34,9 @@ Fließband auf 20.
 keine Laufzeitanforderung, und der Wert stammt unverändert aus dem Sample. Beim nächsten Anheben
 der Werkzeugkette gehört er mitgezogen.
 
-Ein `engines`-Feld in `package.json` würde diese Ableitung überflüssig machen und `npm ci` bei
-falscher Node-Version warnen lassen. Es ist bewusst nicht gesetzt, weil das eine Änderung an der
-übernommenen Werkzeugkette wäre, die niemand beauftragt hat.
+`package.json` führt inzwischen `engines.node >= 20` und schreibt damit fest, was oben abgeleitet
+wurde. Der Wert stammt nicht aus dem Sample, sondern aus den `engines`-Angaben von `pcf-scripts` und
+`pcf-start`; er ist eine Festlegung dieses Repositories, keine Übernahme.
 
 ## Wie die Audit-Funde getrennt werden
 

@@ -57,6 +57,17 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   das empirische Ergebnis offen ist, bis es aus einer echten Umgebung vorliegt.
 - 50 weitere Tests, zusammen 84.
 
+### Fixed
+
+- `services/metadata.ts` behandelt `Color` als Nutzlast, nicht als Tragfähigkeitsprobe. Optionsfarben
+  sind in Dataverse optional; eine fehlende Farbe darf weder den Zweig verwerfen noch einen zweiten
+  Netzaufruf auslösen, den der Endpunkt genauso wenig beantworten könnte. Fehlt sie, steht `null` im
+  Modell und die Spalte bekommt den Standardakzent. `docs/API-NOTES.md` nachgezogen.
+- `package.json` führt `engines.node >= 20`. Abgeleitet aus den `engines`-Angaben von `pcf-scripts`
+  und `pcf-start`, den einzigen belastbaren Quellen: weder `package.json` noch das übernommene
+  Sample hatten ein solches Feld, und `eslint`, `vitest` und `typescript` sind alle weiter. Damit
+  steht die Node-Anforderung im Projekt statt nur in `docs/CI.md`.
+
 ### Changed
 
 - `.claude/commands/kanban-rebuild.md` auf v2. Alle Änderungen folgen aus den Audit-Befunden:
