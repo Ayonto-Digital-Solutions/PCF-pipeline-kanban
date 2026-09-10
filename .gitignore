@@ -5,3 +5,4 @@ bin/
 generated/
 *.log
 .vscode/
+*.binlog

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="Ayonto" constructor="KanbanBoard" version="1.0.0" display-name-key="Kanban Board" description-key="Kanban board for a Dataverse view, grouped by a choice column" control-type="virtual">
+    <data-set name="records" display-name-key="Records" />
+    <resources>
+      <code path="index.ts" order="1" />
+      <platform-library name="React" version="16.14.0" />
+      <platform-library name="Fluent" version="9.4.0" />
+    </resources>
+    <feature-usage>
+      <uses-feature name="WebAPI" required="true" />
+      <uses-feature name="Utility" required="true" />
+    </feature-usage>
+  </control>
+</manifest>

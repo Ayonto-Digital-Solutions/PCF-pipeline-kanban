@@ -17,6 +17,17 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 - `.claude/commands/kanban-rebuild.md`: Slash-Command, der den Umbau in den Meilensteinen `audit`
   sowie `M1` bis `M4` führt.
 
+### Added
+
+- Baubares PCF-Projekt. Werkzeugkette nach Regel 14 aus `microsoft/PowerApps-Samples`,
+  Commit `ce13915`, Sample `component-framework/FluentThemingAPIControl` übernommen:
+  `package.json`, `tsconfig.json`, `pcfconfig.json` und `eslint.config.mjs` verbatim,
+  `KanbanBoard.pcfproj` mit angepasstem `<Name>` und frischer `ProjectGuid`.
+- `KanbanBoard/` mit Platzhalter-Manifest und Platzhalter-`index.ts`. Namespace `Ayonto`,
+  `control-type="virtual"`, ein `data-set`, keine Beispiel-Property, keine Beispielkomponente.
+  Beides wird in M1 Aufgabe 3 vollständig ersetzt.
+- `npm run build` und `npm run lint` laufen grün. Damit ist Regel 10 ab hier anwendbar.
+
 ### Changed
 
 - `.claude/commands/kanban-rebuild.md` auf v2. Alle Änderungen folgen aus den Audit-Befunden:
