@@ -91,6 +91,13 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 - `prefers-reduced-motion` schaltet den Übergang der Zielmarkierung ab.
 - 29 weitere Tests, zusammen 169.
 
+- `docs/DEV-VERIFICATION.md`: die Prüfliste für den ersten Lauf gegen eine echte Organisation. Neun
+  Punkte, jeder mit der konkreten Frage, dem Weg zur Antwort und dem, was ein negativer Befund nach
+  sich zöge.
+- `.claude/commands/kanban-rebuild.md`: Regel 13 verbietet jetzt ausdrücklich auch selbst gesetzte
+  Wartebefehle auf Runner-Ergebnisse. Ein noch laufender Lauf wird als offener Punkt berichtet und
+  beim nächsten Aufruf nachgetragen.
+
 ### Fixed
 
 - `jsdom` von `30.0.1` auf `26.1.0`. jsdom 30 deklariert `engines.node: ^22.22.2 || ^24.15.0 ||
