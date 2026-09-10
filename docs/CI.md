@@ -25,10 +25,33 @@ Die Wahl ist abgeleitet, nicht gegriffen:
 3. Die übrigen Anforderungen sind weiter: `eslint@9` verlangt `^18.18.0 || ^20.9.0 || >=21.1.0`,
    `vitest@2` verlangt `^18.0.0 || >=20.0.0`, `typescript@4.9.5` verlangt `>=4.2.0`.
 
-Der Schnitt ist damit Node 20. Gebaut wird auf der Untergrenze, weil das den versehentlichen
-Gebrauch neuerer Laufzeit-APIs auffallen lässt. Die Arbeitsumgebung läuft auf Node 22, ein
-Auseinanderlaufen zwischen lokalem Lauf und Fließband ist also möglich und genau deshalb prüft das
-Fließband auf 20.
+Der Schnitt ist damit **Node 20.9.0**, nicht Node 20. `eslint@9`, `eslint-plugin-promise` und
+`typescript-eslint` verlangen `^20.9.0`; ein Node 20.0 bis 20.8 trüge die Werkzeugkette nicht. Die
+erste Fassung dieser Ableitung stand auf `>=20` und war damit zu weit.
+
+Gebaut wird auf der Untergrenze, weil das den versehentlichen Gebrauch neuerer Laufzeit-APIs
+auffallen lässt. Die Arbeitsumgebung läuft auf Node 22, ein Auseinanderlaufen zwischen lokalem Lauf
+und Fließband ist also möglich und genau deshalb prüft das Fließband auf 20.
+
+## Der Schritt `check:engines`
+
+`scripts/check-engines.mjs` liest `engines.node` aus `package.json`, bestimmt daraus die kleinste
+zulässige Node-Version und prüft jede **direkte** Abhängigkeit daraufhin, ob ihre eigene
+`engines.node`-Angabe diese Version einschließt. Schlägt das fehl, bricht der Schritt ab.
+
+Der Prüfer existiert, weil genau dieser Fehler passiert ist: `jsdom@30` deklariert
+`engines.node: ^22.22.2 || ^24.15.0 || >=26.0.0` und unterstützt Node 20 überhaupt nicht. Lokal
+lief es trotzdem, weil diese Arbeitsumgebung auf Node 22.22.2 steht, also zufällig auf der
+Untergrenze dieser Spanne. Auf dem Fließband bestanden alle Tests, aber jsdom konnte die beiden
+Dokument-Testdateien nicht laden und `vitest` beendete sich mit Fehler. Die Auflösung war `jsdom@26`
+mit `engines.node: >=18`, das die gesamte deklarierte Spanne abdeckt; die Fassungen 27 bis 29
+verlangen `^20.19.0` und würden `>=20.9.0` stillschweigend verengen.
+
+**Was der Prüfer nicht leistet:** Er prüft die Untergrenze, nicht die vollständige Enthaltung einer
+Spanne in der anderen. Eine Abhängigkeit, die etwa Node 21.0 ausschließt, während wir es zulassen,
+fällt ihm nicht auf. Transitive Abhängigkeiten prüft er ebenfalls nicht; deren `EBADENGINE`-Warnungen
+bei `npm ci` stammen fast alle aus `applicationinsights` unter `pcf-scripts` und sind nicht zu
+verantworten.
 
 `@types/node` steht bei `^18.19.55` und weicht damit von der Laufzeit ab. Das sind reine Typen,
 keine Laufzeitanforderung, und der Wert stammt unverändert aus dem Sample. Beim nächsten Anheben
@@ -71,7 +94,7 @@ Ab M2 laufen Tests teilweise gegen ein gerendertes Dokument. Dafür kamen zwei
 Entwicklungsabhängigkeiten dazu:
 
 - `@testing-library/react@12.1.5`
-- `jsdom@30.0.1`
+- `jsdom@26.1.0`
 
 **Warum RTL 12 und nicht die neueste Fassung.** `@testing-library/react@16` verlangt
 `@types/react-dom` in `^18.0.0 || ^19.0.0`. Die Fluent-8-Peers der übernommenen Werkzeugkette
@@ -81,7 +104,7 @@ passende Version des Testwerkzeugs wählen, nicht die Werkzeugkette verbiegen.
 
 **Der zusätzliche Audit-Anteil ist null.** Nach der Aufnahme meldet `npm audit` unverändert
 vierzehn Funde, neun aus der Werkzeugkette und fünf aus `vitest`. Weder
-`@testing-library/react@12` noch `jsdom@30` bringen einen eigenen Fund mit. Der `audit`-Job weist
+`@testing-library/react@12` noch `jsdom@26` bringen einen eigenen Fund mit. Der `audit`-Job weist
 das weiterhin getrennt aus; die Zahl ist also nicht geschätzt, sondern gemessen.
 
 **Was der Renderer am Testaufbau nötig macht.** `vitest.config.ts` trägt zwei Dinge, die beide aus
@@ -93,6 +116,11 @@ der React-16-Bindung folgen:
 2. `server.deps.inline` für `@griffel` und `@fluentui`. Ohne das transformiert vitest die Pakete
    nicht und der Alias greift nicht. Auf `@griffel` allein einzuschränken reicht nicht, die
    Fluent-Pakete importieren das JSX-Runtime ebenfalls.
+3. `vitest.setup.ts` mit einem minimalen Ersatz für `PointerEvent`. jsdom 26 kennt die Schnittstelle
+   nicht, und ohne sie erreichen weder `clientX` noch `pointerId` den Handler; die Ereignisse kommen
+   als bloßes `Event` an. Der Ersatz erweitert `MouseEvent` und wird nur gesetzt, wenn ein `window`
+   vorhanden ist und `PointerEvent` fehlt. Das heißt zugleich: der Zeigerpfad ist hier gegen einen
+   Stellvertreter geprüft, nicht gegen eine echte Browser-Implementierung.
 
 Im Build stellt sich die Frage nicht: dort werden React und Fluent als Platform Libraries
 ausgelagert, sichtbar als `external "Reactv16"` und `external "FluentUIReactv940"`. Das Auflösen

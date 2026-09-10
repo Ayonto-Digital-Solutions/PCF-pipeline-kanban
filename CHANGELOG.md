@@ -93,6 +93,19 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Fixed
 
+- `jsdom` von `30.0.1` auf `26.1.0`. jsdom 30 deklariert `engines.node: ^22.22.2 || ^24.15.0 ||
+  >=26.0.0` und unterstützt Node 20 nicht. Lokal fiel das nicht auf, weil die Arbeitsumgebung auf
+  Node 22.22.2 steht; auf dem Fließband bestanden zwar alle Tests, jsdom konnte aber die beiden
+  Dokument-Testdateien nicht laden und `vitest` endete mit Fehler.
+- `engines.node` von `>=20` auf `>=20.9.0` korrigiert. `eslint@9`, `eslint-plugin-promise` und
+  `typescript-eslint` verlangen `^20.9.0`, die erste Ableitung war zu weit.
+- Neuer Schritt `check:engines` mit `scripts/check-engines.mjs`, im Fließband vor dem Build. Er
+  prüft jede direkte Abhängigkeit gegen die deklarierte Node-Untergrenze und hätte den Fehler vor
+  dem Push gefangen.
+- `vitest.setup.ts` mit einem minimalen `PointerEvent`-Ersatz. jsdom 26 kennt die Schnittstelle
+  nicht, wodurch die Zeigerereignisse ohne `clientX` und `pointerId` beim Handler ankamen.
+
+
 - `services/metadata.ts` behandelt `Color` als Nutzlast, nicht als Tragfähigkeitsprobe. Optionsfarben
   sind in Dataverse optional; eine fehlende Farbe darf weder den Zweig verwerfen noch einen zweiten
   Netzaufruf auslösen, den der Endpunkt genauso wenig beantworten könnte. Fehlt sie, steht `null` im

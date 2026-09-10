@@ -24,6 +24,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Check engines
+        run: npm run check:engines
+
       - name: Build
         run: npm run build
 

@@ -3,13 +3,14 @@
 	"version": "1.0.0",
 	"description": "Project containing your PowerApps Component Framework (PCF) control.",
 	"engines": {
-		"node": ">=20"
+		"node": ">=20.9.0"
 	},
 	"scripts": {
 		"build": "pcf-scripts build",
 		"clean": "pcf-scripts clean",
 		"lint": "pcf-scripts lint",
 		"lint:fix": "pcf-scripts lint fix",
+		"check:engines": "node scripts/check-engines.mjs",
 		"rebuild": "pcf-scripts rebuild",
 		"start": "pcf-scripts start",
 		"start:watch": "pcf-scripts start watch",
@@ -35,7 +36,7 @@
 		"eslint-plugin-promise": "^7.2.1",
 		"eslint-plugin-react": "^7.37.2",
 		"eslint-plugin-react-hooks": "^5.1.0",
-		"jsdom": "^30.0.1",
+		"jsdom": "^26.1.0",
 		"pcf-scripts": "^1",
 		"pcf-start": "^1",
 		"typescript": "^4.9.5",

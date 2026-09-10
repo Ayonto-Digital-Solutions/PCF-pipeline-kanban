@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     environmentMatchGlobs: [["__tests__/**/*.dom.test.tsx", "jsdom"]],
+    setupFiles: ["./vitest.setup.ts"],
     server: {
       deps: {
         inline: [/@griffel/, /@fluentui/],
