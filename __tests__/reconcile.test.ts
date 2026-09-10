@@ -162,7 +162,10 @@ describe("clearReverted", () => {
     ]);
     registry = clearReverted(registry);
 
-    expect([...registry.keys()].sort()).toEqual(["asm-1", "asm-2"]);
+    expect(registry.size).toBe(2);
+    expect(registry.has("asm-1")).toBe(true);
+    expect(registry.has("asm-2")).toBe(true);
+    expect(registry.has("asm-3")).toBe(false);
   });
 
   it("hinterlässt keinen Eintrag, wenn jede Verschiebung aufgelöst ist", () => {
