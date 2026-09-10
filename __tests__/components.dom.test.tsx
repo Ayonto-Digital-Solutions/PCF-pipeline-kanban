@@ -16,10 +16,24 @@ function card(overrides: Partial<CardRecord> = {}): CardRecord {
   return { id: "asm-1", title: "Marc", subtitle: null, badge: null, groupValue: null, ...overrides };
 }
 
+function renderCard(props: Partial<React.ComponentProps<typeof Card>> = {}) {
+  return render(
+    <Card
+      card={card()}
+      translate={translate}
+      draggable={false}
+      dragging={false}
+      onOpen={vi.fn()}
+      onPointerDown={vi.fn()}
+      {...props}
+    />
+  );
+}
+
 describe("Card, Verdrahtung des Klicks", () => {
   it("meldet die Datensatz-ID beim Klick", () => {
     const onOpen = vi.fn();
-    render(<Card card={card()} translate={translate} onOpen={onOpen} />);
+    renderCard({ onOpen: onOpen });
 
     fireEvent.click(screen.getByRole("button"));
 
@@ -29,13 +43,13 @@ describe("Card, Verdrahtung des Klicks", () => {
 
   it("meldet nichts, solange nicht geklickt wird", () => {
     const onOpen = vi.fn();
-    render(<Card card={card()} translate={translate} onOpen={onOpen} />);
+    renderCard({ onOpen: onOpen });
 
     expect(onOpen).not.toHaveBeenCalled();
   });
 
   it("ist ein Schaltflächenelement und damit von Haus aus fokussierbar", () => {
-    render(<Card card={card()} translate={translate} onOpen={vi.fn()} />);
+    renderCard();
     const element = screen.getByRole("button");
 
     expect(element.tagName).toBe("BUTTON");
@@ -43,13 +57,7 @@ describe("Card, Verdrahtung des Klicks", () => {
   });
 
   it("zeigt Titel, Untertitel und Abzeichen, wenn alle gebunden sind", () => {
-    render(
-      <Card
-        card={card({ subtitle: "Statik", badge: "Kritisch" })}
-        translate={translate}
-        onOpen={vi.fn()}
-      />
-    );
+    renderCard({ card: card({ subtitle: "Statik", badge: "Kritisch" }) });
 
     expect(screen.getByText("Marc")).toBeDefined();
     expect(screen.getByText("Statik")).toBeDefined();
@@ -57,14 +65,14 @@ describe("Card, Verdrahtung des Klicks", () => {
   });
 
   it("lässt Untertitel und Abzeichen weg, wenn nichts gebunden ist", () => {
-    const { container } = render(<Card card={card()} translate={translate} onOpen={vi.fn()} />);
+    const { container } = renderCard();
 
     expect(container.querySelector(".ayonto-kanban-card-subtitle")).toBeNull();
     expect(container.querySelector(".ayonto-kanban-card-badge")).toBeNull();
   });
 
   it("nutzt die Ersatzbezeichnung, wenn kein Titel vorliegt", () => {
-    render(<Card card={card({ title: "" })} translate={translate} onOpen={vi.fn()} />);
+    renderCard({ card: card({ title: "" }) });
 
     expect(screen.getByText("Ohne Bezeichnung")).toBeDefined();
   });

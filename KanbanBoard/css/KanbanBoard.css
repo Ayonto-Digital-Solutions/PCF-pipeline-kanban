@@ -168,3 +168,50 @@
   border-radius: 4px;
   padding: 1px 6px;
 }
+
+.ayonto-kanban-root .ayonto-kanban-card[data-draggable="true"] {
+  touch-action: manipulation;
+}
+
+.ayonto-kanban-root .ayonto-kanban-card.is-dragging {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.ayonto-kanban-root .ayonto-kanban-column {
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.ayonto-kanban-root .ayonto-kanban-column.is-drop-target {
+  border-color: var(--ayonto-ink);
+  background: var(--ayonto-surface);
+}
+
+.ayonto-kanban-root .ayonto-kanban-column.is-drop-target .ayonto-kanban-column-body {
+  outline: 2px dashed var(--ayonto-ink);
+  outline-offset: -6px;
+  border-radius: 8px;
+}
+
+.ayonto-kanban-drag-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  pointer-events: none;
+  max-width: 240px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1B2340;
+  background: #FFFFFF;
+  border: 1px solid #5B6478;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(27, 35, 64, 0.24);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ayonto-kanban-root .ayonto-kanban-column {
+    transition: none;
+  }
+}

@@ -42,6 +42,14 @@ export class KanbanBoard implements ComponentFramework.ReactControl<IInputs, IOu
       dataset,
       binding: resolveBinding(dataset),
       translate: (key: string) => context.resources.getString(key),
+      allowDrag: context.parameters.allowDrag.raw,
+      writer: {
+        updateRecord: (entityName, recordId, payload) =>
+          context.webAPI.updateRecord(entityName, recordId, payload),
+      },
+      onMoved: () => {
+        context.parameters.records.refresh();
+      },
       onOpenRecord: (recordId: string) => {
         const record = context.parameters.records.records[recordId];
         if (record !== undefined) {

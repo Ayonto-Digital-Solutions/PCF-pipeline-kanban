@@ -166,7 +166,7 @@
     <value>Allow drag and drop</value>
   </data>
   <data name="AllowDrag_Description" xml:space="preserve">
-    <value>Allows moving cards between columns. Takes effect from milestone M2; the board is read only before that.</value>
+    <value>Allows moving cards between columns with mouse, pen or touch. Keyboard moving follows in a later milestone.</value>
   </data>
   <data name="Board_Loading" xml:space="preserve">
     <value>Loading the board</value>

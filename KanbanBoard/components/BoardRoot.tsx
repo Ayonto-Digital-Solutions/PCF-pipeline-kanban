@@ -1,6 +1,10 @@
 import * as React from "react";
-import { buildBoard } from "../model/grouping";
+import { buildBoard, normalizeOptionValue } from "../model/grouping";
+import { applyOverrides } from "../model/reconcile";
+import { OptionValue } from "../model/types";
 import { ColumnBinding, DatasetLike, useDatasetRecords } from "../hooks/useDatasetRecords";
+import { useCardDrag } from "../hooks/useCardDrag";
+import { MoveWriter, useOptimisticMove } from "../hooks/useOptimisticMove";
 import { useOptionMetadata } from "../hooks/useOptionMetadata";
 import { OptionMetadataService } from "../services/metadata";
 import { STRING, Translate } from "./strings";
@@ -14,7 +18,10 @@ export interface BoardRootProps {
   readonly dataset: DatasetLike;
   readonly binding: ColumnBinding;
   readonly translate: Translate;
+  readonly allowDrag: boolean;
+  readonly writer: MoveWriter;
   readonly onOpenRecord: (recordId: string) => void;
+  readonly onMoved: () => void;
 }
 
 export const BoardRoot: React.FC<BoardRootProps> = ({
@@ -24,10 +31,30 @@ export const BoardRoot: React.FC<BoardRootProps> = ({
   dataset,
   binding,
   translate,
+  allowDrag,
+  writer,
   onOpenRecord,
+  onMoved,
 }) => {
   const metadata = useOptionMetadata(service, entityName, attributeName);
   const { records, paging } = useDatasetRecords(dataset, binding);
+  const { registry, move, observe } = useOptimisticMove(writer, entityName, attributeName);
+  const drag = useCardDrag();
+
+  React.useEffect(() => {
+    const values = new Map<string, OptionValue | null>();
+    records.forEach((record) => {
+      values.set(record.id, normalizeOptionValue(record.groupValue));
+    });
+    observe(values);
+  }, [records, observe]);
+
+  const handleMove = React.useCallback(
+    (recordId: string, _from: OptionValue | null, to: OptionValue | null): void => {
+      void move(recordId, _from, to).then(onMoved, onMoved);
+    },
+    [move, onMoved]
+  );
 
   if (metadata.state.status === "error") {
     return (
@@ -52,13 +79,22 @@ export const BoardRoot: React.FC<BoardRootProps> = ({
 
   const board = buildBoard({
     options: metadata.state.options,
-    records,
+    records: applyOverrides(records, registry),
     unassignedLabel: translate(STRING.columnUnassigned),
   });
 
   return (
     <div className="ayonto-kanban-root">
-      <Board board={board} paging={paging} translate={translate} onOpenRecord={onOpenRecord} />
+      <Board
+        board={board}
+        paging={paging}
+        translate={translate}
+        allowDrag={allowDrag}
+        drag={drag.state}
+        dispatchDrag={drag.dispatch}
+        onOpenRecord={onOpenRecord}
+        onMove={handleMove}
+      />
     </div>
   );
 };

@@ -79,6 +79,18 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 - Der zusätzliche Audit-Anteil ist null. `npm audit` meldet unverändert vierzehn Funde, neun aus
   der Werkzeugkette und fünf aus `vitest`. In `docs/CI.md` ausgewiesen.
 
+- Zeigergesteuertes Verschieben über Pointer Events, kein HTML5-Drag. Maus, Stift und Finger nehmen
+  denselben Pfad. Eigener Drag-Layer, `setPointerCapture`, Aufnahme erst ab fünf Pixeln Bewegung,
+  damit ein Klick weiterhin den Datensatz öffnet.
+- Ablagebereiche sind die Spalten, erkannt über `document.elementFromPoint` und
+  `data-column-key`, mit sichtbarer Markierung der Zielspalte. Ablage auf der Ursprungsspalte
+  erzeugt keinen Schreibvorgang.
+- Anbindung an `useOptimisticMove`: der optimistische Zustand wirkt jetzt am gerenderten Board, ein
+  Dataset-Refresh löst ihn über ein einziges gefaltetes Ereignis auf.
+- `allowDrag` wird ausgewertet, die resx-Beschreibungen in 1033 und 1031 sind nachgezogen.
+- `prefers-reduced-motion` schaltet den Übergang der Zielmarkierung ab.
+- 29 weitere Tests, zusammen 169.
+
 ### Fixed
 
 - `services/metadata.ts` behandelt `Color` als Nutzlast, nicht als Tragfähigkeitsprobe. Optionsfarben
