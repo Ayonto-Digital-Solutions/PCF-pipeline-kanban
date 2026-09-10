@@ -1,6 +1,6 @@
 ---
 description: Rebuild the Pipeline Kanban PCF fork into the Ayonto Kanban Board control
-argument-hint: [audit|M1|M2|M3|M4]
+argument-hint: [audit|M1|M2|M0-CI|M3|M4]
 allowed-tools: Read, Write, Edit, Glob, Grep, WebFetch, Bash(npm:*), Bash(node:*), Bash(npx:*), Bash(pac:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*)
 ---
 
@@ -29,9 +29,11 @@ Ausgeführter Meilenstein: `$ARGUMENTS`. Ohne Argument führst du `audit` aus.
 9. **TypeScript strict.** Kein `any` außer für dokumentiert untypisierte Plattform-Objekte, dann mit lokalem Interface und einem Eintrag in `docs/UNTYPED-APIS.md`.
 10. **Jeder Meilenstein endet grün.** `npm run build` und `npm run lint` müssen fehlerfrei durchlaufen, sonst ist der Meilenstein nicht fertig.
     Solange M1 kein baubares Projekt erzeugt hat, ist das Kriterium nicht anwendbar. Dann wird es als Befund gemeldet, nicht umgangen: kein Ersatzkommando, keine als grün ausgegebene Nichtausführung. Ab dem Ende von M1 gilt es unverändert.
+    Werkzeuge, die die Arbeitsumgebung nicht bereitstellen kann, sind kein Befund. Sie werden nach `M0-CI` verschoben und dort ausgeführt. Das betrifft insbesondere `pac`.
 11. **Du fasst keine fremde Solution an.** Die TaskandDecision-Lösung ist nicht Teil dieses Repos und wird nicht verändert.
 12. **Optionsreihenfolge wird übernommen, nicht hergestellt.** Die Reihenfolge des von der Plattform zurückgegebenen Options-Arrays ist die Spaltenreihenfolge. Es wird nirgends sortiert, weder nach Wert noch nach Label. Dazu gehört ein Test mit absteigenden und mit gemischten Optionswerten, der fehlschlägt, sobald irgendwo sortiert wird.
 13. **Keine periodischen Check-ins ohne Anlass.** Nach dem Abschlussbericht eines Meilensteins wird gewartet, nicht gepollt. Kein selbst gestellter Wecker, kein wiederholtes Nachsehen ohne ein Ereignis, das es auslöst.
+14. **Herkunft des Scaffolds.** Ist die Power Platform CLI nicht verfügbar, wird der Projektdateisatz aus `microsoft/PowerApps-Samples`, Teilbaum `component-framework`, mit gepinnter Commit-SHA übernommen. Handgeschriebene Projektdateien bleiben ausgeschlossen. Übernommen werden ausschließlich die Werkzeugkettendateien, niemals Beispielkomponenten oder Beispiel-Properties. Jede übernommene Datei wird mit Sample-Pfad und SHA belegt, jede Abweichung vom Original einzeln benannt. Weichen im Sample gepinnte Versionen von diesem Command ab, gilt das Sample.
 
 ---
 
@@ -155,35 +157,46 @@ Danach stoppen.
 
 ## M1 Fundament
 
-### Aufgabe 0, zeitlich begrenzt: Spike auf die Optionsmetadaten
+### Aufgabe 1: Scaffold, vor allem anderen
 
-Vor jeder Implementierung klärst du eine einzige Frage: Führt die von
-`context.utils.getEntityMetadata` zurückgegebene Attributsdefinition die Optionsliste mit, also
-Wert, Label und Farbe? Zeitgrenze ist ein Harness-Lauf. Lässt sich die Frage darin nicht
-beantworten, gilt der Spike als negativ.
-
-Das Ergebnis entscheidet die Implementierung in `services/metadata.ts`:
-
-- **Positiv**: `getEntityMetadata` ist die Quelle. Kein weiterer Weg wird gebaut.
-- **Negativ**: Der Metadaten-Endpunkt wird zum dokumentierten Ausnahmefall mit Eintrag in
-  `docs/UNTYPED-APIS.md`. Er wird in `services/metadata.ts` gekapselt und das Ergebnis gecacht.
-  Niemals ein roher `fetch` in einer Komponente.
-
-**In keinem Fall** werden die Optionen aus den vorhandenen Datensätzen abgeleitet. Eine Spalte,
-für die gerade kein Datensatz existiert, würde sonst fehlen, und genau die leere Spalte ist das
-Ziel eines Kanban-Boards.
-
-### Aufgabe 1: Scaffold
+Das Scaffold steht am Anfang von M1. Ohne baubares Projekt gibt es weder Harness noch `npm run
+build`, und jede Aussage über die Laufzeit wäre unbelegt.
 
 ```
 pac pcf init --namespace Ayonto --name KanbanBoard --template dataset --framework react
 ```
 
+Ist `pac` nicht verfügbar, greift Regel 14: Übernahme des Werkzeugkettensatzes aus
+`microsoft/PowerApps-Samples` mit gepinnter SHA. Kein Warten auf die CLI, kein handgeschriebenes
+Ersatzprojekt.
+
 Danach Neuimplementierung gegen die Zielstruktur. `PipelineKanban/` bleibt unverändert im Repo als
 Referenz und wird **nicht** kopiert. Kein Baustein wird aus dem alten Control übernommen, weder
 Datei noch Funktion noch CSS-Regel.
 
-### Aufgabe 2: Fundament
+### Aufgabe 2: Fallback-Kette für die Optionsmetadaten
+
+Ob die von `context.utils.getEntityMetadata` zurückgegebene Attributsdefinition die Optionsliste
+mitführt, ist nicht dokumentiert und wird nicht vorab geklärt. Statt darauf zu warten, baut
+`services/metadata.ts` eine Kette, die beide Fälle abdeckt:
+
+1. `context.utils.getEntityMetadata` versuchen. Führt die Antwort Wert, Label und Farbe mit, ist
+   das die Quelle.
+2. Andernfalls der Metadaten-Endpunkt, gekapselt in `services/metadata.ts`, Ergebnis gecacht.
+   Niemals ein roher `fetch` in einer Komponente.
+
+Welcher Zweig greift, wird **einmalig** protokolliert, nicht bei jedem Aufruf. `docs/API-NOTES.md`
+benennt beide Zweige und hält ausdrücklich fest, dass das empirische Ergebnis offen ist, bis es aus
+einer echten Umgebung vorliegt.
+
+Bleibt der Metadaten-Endpunkt der einzige Weg, greift der dokumentierte Ausnahmefall aus Regel 9
+mit Eintrag in `docs/UNTYPED-APIS.md`.
+
+**In keinem Fall** werden die Optionen aus den vorhandenen Datensätzen abgeleitet. Eine Spalte,
+für die gerade kein Datensatz existiert, würde sonst fehlen, und genau die leere Spalte ist das
+Ziel eines Kanban-Boards.
+
+### Aufgabe 3: Fundament
 
 - Konfiguration vollständig über `property-set` gemäß Zielbild. Die Freitext-Properties `groupByField` und `valueField` entfallen ersatzlos.
 - Spaltenreihenfolge aus dem zurückgegebenen Options-Array, unsortiert, nach Regel 12.
@@ -210,6 +223,25 @@ Datei noch Funktion noch CSS-Regel.
 - Tests für `reconcile.ts` inklusive des Falls "Fremdänderung während Pending".
 
 **Definition of Done:** Board ist ohne Maus vollständig bedienbar, Touch-Drag funktioniert, kein Zustandsverlust bei `updateView`, Tests grün.
+
+## M0-CI Fließband
+
+Einzuordnen vor M3. Der Meilenstein holt nach, was die Arbeitsumgebung nicht leisten kann.
+
+- GitHub-Actions-Workflow, der bei **jedem Push** `npm ci`, `npm run build`, `npm run lint` und
+  `npm test` ausführt. Rot bedeutet rot, kein `continue-on-error`.
+- Solution-Packaging über `microsoft/powerplatform-actions`. Der Workflow erzeugt aus dem
+  gebauten Control eine Solution und legt sie als Artefakt ab.
+- `docs/CI.md`: was der Workflow tut, welche Secrets er braucht und wie ein Lauf zu lesen ist.
+
+**`pac` läuft ausschließlich hier.** In der Arbeitsumgebung wird die Power Platform CLI weder
+erwartet noch installiert noch nachgebildet. Wer lokal etwas braucht, das nur `pac` liefert,
+verschiebt es hierher statt es zu umgehen. Damit ist auch geklärt, wo die im Manifest gepinnten
+Versionsstrings der Platform Libraries nach Regel 2 ihre Bestätigung finden: im ersten grünen
+Build dieses Workflows.
+
+**Definition of Done:** Der Workflow läuft auf einem Push grün durch, Build, Lint und Test sind
+darin nachweislich ausgeführt worden, das Solution-Artefakt liegt vor, `docs/CI.md` ist gepflegt.
 
 ## M3 Governance
 

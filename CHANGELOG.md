@@ -30,6 +30,16 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
   zugeschnitten, die serverseitige Durchsetzung ausdrücklich außerhalb dieses Repos; zwei
   Audit-Zusatzbefunde mit Akzeptanzkriterium in die Defektliste gehoben.
 
+- `.claude/commands/kanban-rebuild.md` auf v3. Neue Regel 14 zur Herkunft des Scaffolds: ist die
+  Power Platform CLI nicht verfügbar, wird der Werkzeugkettensatz aus `microsoft/PowerApps-Samples`
+  mit gepinnter SHA übernommen, handgeschriebene Projektdateien bleiben ausgeschlossen. Regel 10
+  wertet fehlende Werkzeuge nicht länger als Befund, sondern verschiebt sie nach `M0-CI`. M1
+  stellt das Scaffold an den Anfang, und der blockierende Metadaten-Spike weicht einer
+  Fallback-Kette in `services/metadata.ts` mit einmaligem Logging des greifenden Zweigs. Neuer
+  Meilenstein `M0-CI` vor M3: GitHub-Actions-Workflow für Build, Lint und Test bei jedem Push plus
+  Solution-Packaging über `microsoft/powerplatform-actions`, und die Festlegung, dass `pac`
+  ausschließlich dort läuft.
+
 ### Notes
 
 - Der Meilenstein `audit` ändert keinen Code. Die Manifest-Version bleibt deshalb bei `0.4.0`;
