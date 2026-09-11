@@ -115,6 +115,63 @@ sondern die Konfiguration über `property-set`.
 
 ---
 
+## 5a. React 17 statt React 16 zur Laufzeit
+
+**Frage.** Der Code ist gegen React 16.14 typisiert und getestet. Die Dokumentation sagt, dass eine
+Model-Driven-App **React 17.0.2** lädt, obwohl das Manifest `16.14.0` anfordert. Bricht davon etwas?
+
+**Was belegt ist.** Die Tabelle der unterstützten Platform Libraries führt eine eigene Spalte
+„Version loaded": angefordert `16.14.0`, geladen `17.0.2 (Model)` und `16.14.0 (Canvas)`. Quelle:
+`powerapps-docs/developer/component-framework/react-controls-platform-libraries.md`. Für Fluent gilt
+dasselbe, siehe Punkt 6.
+
+**Was der Code dazu hergibt.** Die naheliegende Sorge ist die verlegte Ereignisdelegation: React 17
+hängt seine Listener an den Wurzelcontainer statt an `document`. Das bricht Code, der selbst einen
+nativen Listener auf `document` hängt und sich auf die Reihenfolge gegenüber React verlässt, oder der
+mit `stopPropagation` einen solchen Listener aufhalten will.
+
+Der Code wurde daraufhin durchgesehen. Das Ergebnis:
+
+| Geprüft | Befund |
+| --- | --- |
+| `addEventListener` auf `document` oder `window` | **kein einziges Vorkommen** im gesamten Control |
+| Handler-Registrierung | ausschließlich über React-Props: `onPointerDown`, `onPointerMove`, `onPointerUp`, `onPointerCancel`, `onKeyDown`, `onClick` |
+| Blasenweg | Zeigerereignisse blasen von der Karte zum `div.ayonto-kanban-board`, beide innerhalb unseres Teilbaums. Nie über den Wurzelcontainer hinaus |
+| `stopPropagation` | kein Vorkommen |
+| `document.`-Zugriffe | zwei, beide **nicht** ereignisbezogen: `querySelector` für die Fokuswiederherstellung, `elementFromPoint` für die Trefferprüfung |
+| Asynchrones Lesen von Ereignisfeldern | keines. `clientX`, `clientY`, `pointerId`, `button` und `currentTarget` werden synchron gelesen, bevor irgendetwas wartet |
+
+**Damit ist das Risiko kleiner, als es zunächst aussah.** Kein Punkt im Code erwartet Ereignisse am
+`document`, und keiner verlässt sich auf Blasen über den Wurzelcontainer hinaus. Zwei weitere
+Unterschiede wirken sogar in unsere Richtung:
+
+- **Event-Pooling.** React 17 hat es abgeschafft. Code, der ein Ereignisobjekt aufbewahrt und später
+  liest, war unter 16 kaputt und ist unter 17 in Ordnung. Unserer tut es ohnehin nicht, aber die
+  Änderung kann hier nichts brechen, sondern nur entschärfen.
+- **Bündelung von Zustandsänderungen.** React 17 bündelt außerhalb von Ereignishandlern weiterhin
+  nicht; das kam erst mit 18. Die Faltung in `useOptimisticMove`, die den `datasetRefreshed`-Fall
+  bewusst in **eine** Dispatch-Aktion zusammenzieht, bleibt also richtig und wäre auch unter 18 noch
+  richtig.
+
+**Was offen bleibt.** Dass der Code keine dieser Annahmen trifft, ist geprüft; dass die Kombination
+aus `setPointerCapture`, `pointer-events: none` auf der gezogenen Karte und der Delegation am
+Wurzelcontainer sich unter React 17 im Browser so verhält wie unter jsdom mit dem Stellvertreter aus
+`vitest.setup.ts`, ist **nicht** geprüft. Das ist derselbe Vorbehalt wie in Punkt 2 und wird dort
+mitbeantwortet.
+
+**Wie zu prüfen.** Nicht als eigener Handgriff. Beim Abarbeiten von Punkt 2 mitbeobachten und einen
+Bruch anders einordnen als einen Zeigerfehler: ein Ereignis, das gar nicht ankommt, oder ein Zustand,
+der nach dem Loslassen zurückspringt, sind React-Verdacht. Eine Zielspalte, die nicht markiert wird,
+während der Drag-Layer sauber folgt, ist `elementFromPoint`.
+
+**Bei negativem Befund.** Erst die geladene React-Fassung aus Punkt 6 feststellen, dann entscheiden.
+Ein Anheben von `@types/react` auf 17 wäre die kleine Antwort; sie ändert nur Typen, nicht das
+Verhalten, und sie widerspricht Regel 15, solange das Manifest `16.14.0` anfordert. Die Doku sagt
+ausdrücklich, dass `16.14.0` der anzufordernde Wert ist und der Host eine höhere verträgliche Fassung
+lädt — die angeforderte Fassung ist also **nicht** falsch und gehört nicht angehoben.
+
+---
+
 ## 6. Platform-Library-Versionen zur Laufzeit
 
 **Frage.** Lädt der Host React `16.14.0` und Fluent `9.4.0`, wie das Manifest sie anfordert?

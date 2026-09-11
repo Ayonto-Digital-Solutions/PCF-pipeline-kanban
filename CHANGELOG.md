@@ -7,6 +7,71 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Mindesthöhe von 240 Pixeln auf `.ayonto-kanban-root`. Ein Subgrid-Container ohne eigene Höhe
+  ließ das Board bisher auf null zusammenfallen, und das sieht im Browser genauso aus wie ein
+  Bundle, das gar nicht lädt. Die Verwechslung hätte Punkt 5 aus `docs/DEV-VERIFICATION.md` falsch
+  negativ beantwortet und in den Rückweg geführt, der den ganzen Entwurf kostet.
+  Die Mindesthöhe beseitigt einen Auslöser, nicht die Verwechslungsgefahr: ein Bundle, das nicht
+  lädt, rendert auch keine Wurzel. Die Dreiertabelle in `docs/DEV-RUNBOOK.md` §3 Punkt 5 bleibt
+  deshalb maßgeblich.
+- `.ayonto-kanban-drag-layer` war der einzige Selektor im Stylesheet ohne Präfix
+  `.ayonto-kanban-root` und hätte die Klasse überall im Host getroffen. Im DOM lag das Element schon
+  immer innerhalb der Wurzel; die Regel ist jetzt entsprechend gescoped. Gefunden hat das der neue
+  Stylesheet-Test, nicht das Auge.
+- Manifest-Version auf `0.2.1`. Eine Änderung am Control ohne Versionserhöhung wird von einer
+  Model-Driven-App nicht bemerkt.
+
+### Added
+
+- `__tests__/stylesheet.test.ts`: prüft die Mindesthöhe, dass die volle Höhe daneben bestehen bleibt,
+  und dass jede Regel unter `.ayonto-kanban-root` gescoped ist. Drei Tests, 221 insgesamt.
+- `docs/DEV-VERIFICATION.md` Punkt **5a, React 17 statt React 16 zur Laufzeit**. Die Doku sagt, dass
+  eine Model-Driven-App React `17.0.2` lädt, obwohl das Manifest `16.14.0` anfordert, während der
+  Code gegen 16.14 typisiert und getestet ist.
+  Der Punkt trägt das Ergebnis einer Durchsicht: **kein einziger `addEventListener` auf `document`
+  oder `window`**, alle Handler über React-Props, kein `stopPropagation`, kein asynchrones Lesen von
+  Ereignisfeldern, und die beiden `document.`-Zugriffe sind nicht ereignisbezogen. Die verlegte
+  Ereignisdelegation trifft damit keine Stelle im Code. Der Punkt bleibt trotzdem stehen, weil das
+  Zusammenspiel mit `setPointerCapture` im Browser weiterhin ungeprüft ist; er wird bei Punkt 2
+  mitbeobachtet und braucht keinen eigenen Handgriff.
+
+### Added
+
+- `.github/workflows/package.yml`: Packt die Dataverse-Solution, auf Abruf über
+  `workflow_dispatch` und bei jedem Tag, der auf `v` beginnt. Managed und unmanaged, beide als
+  Artefakt. **Ohne Secrets**, weil Packen keine Authentifizierung braucht; die braucht nur der
+  Import, und der bleibt eine Handlung im Maker-Portal.
+  Der Workflow installiert die Power Platform CLI als .NET-Werkzeug über den dokumentierten
+  plattformübergreifenden Weg, baut das Control mit `--buildMode production`, erzeugt das
+  Solutionprojekt mit `pac solution init` und `pac solution add-reference` und baut zweimal:
+  `Debug` liefert unmanaged, `Release` managed.
+- Nicht blockierender Job `probe-virtual-dataset` im selben Workflow. Er ruft `pac pcf init` mit
+  `--template dataset --framework react` auf und gibt Exitcode und erzeugtes Manifest ins Protokoll.
+  Damit beantwortet sich Punkt 5 aus `docs/DEV-VERIFICATION.md` so weit vorab, wie es ohne Umgebung
+  geht: ob das Werkzeug die Kombination vorsieht und welche Attribute es dabei setzt.
+
+### Changed
+
+- `docs/CI.md`: Der Platzhalterabschnitt „Solution-Packaging, noch nicht umgesetzt" ist durch die
+  Beschreibung des tatsächlichen Workflows ersetzt. Der Denkfehler, an dem er hing, ist benannt:
+  Zugangsdaten braucht nur der Import, nicht das Packen.
+- `docs/DEV-RUNBOOK.md` §1: Hauptpfad ist jetzt das Fließband. Die lokalen `pac`-Befehle bleiben als
+  Alternative stehen, sind aber nicht mehr der erste Weg, weil `pac` weder in der Arbeitsumgebung
+  noch auf dem Zielrechner vorhanden ist.
+  Zwei der acht offenen Punkte sind damit erledigt: `--buildMode` nimmt `production`, belegt an
+  `pcf-scripts` selbst statt an der widersprüchlichen Doku-Seite, und die Bundlegrößen sind
+  gemessen statt geschätzt — 25.394 Byte produktiv gegen 87.881 Byte im Entwicklungsbuild.
+
+### Notes
+
+- Das `cdsproj` wird vom Fließband erzeugt und **nicht** eingecheckt. `pac` lässt sich in der
+  Arbeitsumgebung nicht installieren, weil der Egress-Proxy `dot.net` sperrt, und die Datei samt
+  `src/Other/Solution.xml` aus dem Gedächtnis zu schreiben wäre nach Regel 2 unzulässig. Der
+  Workflow legt das erzeugte Projekt als Artefakt `solution-project-sources` ab; nach dem ersten
+  Lauf ist die echte Datei verfügbar und gehört dann eingecheckt.
+
 ## [0.2.0] - M2
 
 Meilensteine M1 und M2 abgeschlossen. Das Board rendert, lässt sich mit Zeiger und Tastatur

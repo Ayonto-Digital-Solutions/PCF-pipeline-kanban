@@ -15,6 +15,10 @@ Jeder Schritt trägt eine Marke:
 | **[Repo]** | Aus den Dateien dieses Repositories abgelesen. |
 | **[Zu verifizieren]** | Weder belegt noch abgelesen. Vor Ort zu prüfen, nicht zu raten. |
 
+Die Prüfliste in `docs/DEV-VERIFICATION.md` hat seit der ersten Fassung dieses Runbooks einen Punkt
+mehr: **5a, React 17 statt React 16 zur Laufzeit.** Er braucht keinen eigenen Handgriff und wird bei
+Punkt 2 mitbeobachtet.
+
 Die Dokumentation wurde nicht auf `learn.microsoft.com` gelesen — der Zugriff ist aus dieser Umgebung
 gesperrt — sondern in den Quellrepositories, aus denen Learn erzeugt wird:
 
@@ -23,10 +27,13 @@ gesperrt — sondern in den Quellrepositories, aus denen Learn erzeugt wird:
 
 Nach Regel 2 gilt das als Beleg, mit Ausnahme von Versionsangaben und Vorschau-gegen-GA-Aussagen.
 
-**Nichts in Abschnitt 1 wurde ausgeführt.** In dieser Umgebung gibt es weder `pac` noch `msbuild`
-noch `dotnet`. Die Befehle sind aus der Dokumentation übernommen und in ihren Parametern gegen die
-CLI-Referenz geprüft; ob sie auf einem Windows-Rechner mit installierter CLI durchlaufen, ist damit
-nicht gezeigt.
+**Was hier ausgeführt wurde und was nicht.** In dieser Arbeitsumgebung gibt es weder `pac` noch
+`msbuild` noch `dotnet`, und `pac` lässt sich auch nicht nachinstallieren, weil der Egress-Proxy
+`dot.net` sperrt. Ausgeführt und damit belegt sind nur die npm-Schritte, insbesondere der
+Produktionsbuild samt gemessener Bundlegröße. Jeder `pac`- und `dotnet`-Befehl ist gegen die
+CLI-Referenz auf Parameterebene geprüft, aber **nicht ausgeführt**. Bewiesen werden sie erst durch
+den ersten Lauf von `.github/workflows/package.yml`; bis dahin ist der Workflow selbst eine
+begründete Annahme, keine Tatsache.
 
 ---
 
@@ -132,7 +139,7 @@ Behoben wird das hier nicht: eine Eigenschaft im Manifest wäre Code und eine Ve
 
 ---
 
-## 1. Was zum Packen fehlt
+## 1. Wie das Paket entsteht
 
 ### 1.1 Was vorhanden ist
 
@@ -140,133 +147,132 @@ Behoben wird das hier nicht: eine Eigenschaft im Manifest wäre Code und eine Ve
 | --- | --- |
 | `KanbanBoard.pcfproj` | vorhanden, `<Name>KanbanBoard</Name>`, `OutputPath` auf `out\controls` **[Repo]** |
 | `pcfconfig.json` | vorhanden, `outDir` auf `./out/controls` **[Repo]** |
-| `KanbanBoard/ControlManifest.Input.xml` | vorhanden, Version `1.0.0` **[Repo]** |
+| `KanbanBoard/ControlManifest.Input.xml` | vorhanden, Version `0.2.0` **[Repo]** |
 | `out/controls/KanbanBoard/` | erzeugt, enthält `bundle.js`, `ControlManifest.xml`, `css/`, `strings/` **[Repo]** |
 
-### 1.2 Was fehlt
+### 1.2 Was noch fehlt, und wer es beisteuert
 
-1. **Ein `cdsproj`.** Es gibt keins im Repository. **[Repo: `find . -name "*.cdsproj"` ist leer]**
-2. **Ein Herausgeber (Publisher) in der Zielumgebung**, mit einem Präfix, das zwei bis acht Zeichen
-   lang ist, mit einem Buchstaben beginnt und nicht mit `mscrm`. **[Doku: CLI-Referenz zu
-   `pac solution init` und `pac pcf push`]**
-3. **Ein Authentifizierungsprofil** der Power Platform CLI für die Zielumgebung.
-4. **Die CLI selbst.** In dieser Umgebung nicht vorhanden; der DEV-Lauf findet auf einem Rechner mit
-   installiertem `pac` statt.
-5. **Ein Produktionsbuild.** `npm run build` erzeugt per Vorgabe einen Entwicklungsbuild. Siehe 1.5.
-
-### 1.3 Die Entscheidung: schieben statt packen
-
-Die Dokumentation nennt zwei Wege. **[Doku: `code-components-alm.md`]**
-
-| | `pac pcf push` | `cdsproj` + `msbuild` |
+| Was | Woher | Zustand |
 | --- | --- | --- |
-| Braucht ein `cdsproj` | nein | ja |
-| Versionserhöhung je Runde | **nein**, wird umgangen | ja, sonst greift der Cache |
-| Zielsolution | `--solution-unique-name`, sonst eine temporäre `PowerAppsTools_<Präfix>` | die selbst angelegte |
-| Ergebnis | unmanaged in der Entwicklungsumgebung | managed oder unmanaged, je nach Konfiguration |
-| Geeignet für | die innere Entwicklungsschleife | Auslieferung nach TEST und PROD |
+| Die Power Platform CLI | Das Fließband installiert sie je Lauf als .NET-Werkzeug | erledigt |
+| Ein `cdsproj` samt `src/Other/` | `pac solution init` auf dem Runner, siehe 1.3 | erzeugt, noch nicht eingecheckt |
+| Ein Produktionsbuild | Das Fließband baut mit `--buildMode production` | erledigt |
+| **Ein Herausgeber in der Zielumgebung** | **du** | offen |
+| **Der Import selbst** | **du, im Maker-Portal** | offen |
 
-**Empfehlung für diesen Lauf: `pac pcf push`.** Begründung ist Befund C: der Verifikationslauf
-besteht aus vielen kurzen Runden, und der `push`-Weg nimmt genau die Reibung heraus, die dabei
-schmerzt. Das `cdsproj` wird gebraucht, sobald das Ergebnis nach TEST wandert — das ist M4-Arbeit,
-nicht die dieses Laufs.
+Der Herausgeber braucht ein Präfix von zwei bis acht Zeichen, das mit einem Buchstaben beginnt und
+nicht mit `mscrm`. **[Doku: CLI-Referenz zu `pac solution init` und `pac pcf push`]** Ein
+Authentifizierungsprofil braucht nur, wer den lokalen Weg aus 1.5 geht; für den Hauptweg ist keines
+nötig.
 
-Der Preis ist benannt: `push` legt ohne `--solution-unique-name` eine temporäre Solution
-`PowerAppsTools_<Präfix>` an. **[Doku: `code-components-alm.md`, Punkt 1 der Diagrammbeschreibung]**
-Für eine Governance-Lösung bei 50Hertz ist das kein Auslieferungsartefakt, sondern ein Werkzeug der
-Entwicklungsumgebung. Der Herausgeber muss trotzdem derselbe sein wie der spätere, sonst lässt sich
-das Control später nicht in die eigentliche Solution übernehmen:
+### 1.3 Der Hauptweg: das Fließband packt, du importierst
 
-> „That solution must share the same solution publisher as used by the **PowerAppsTools** solution."
-> **[Doku: ebenda, Punkt 2]**
+**`pac` steht weder in dieser Arbeitsumgebung noch auf deinem Rechner zur Verfügung.** Damit ist der
+Weg über das Fließband nicht die bequemere Variante, sondern die einzige, die ohne eine lokale
+Installation auskommt.
 
-Also gleich zu Beginn das endgültige Präfix wählen, nicht ein Wegwerfpräfix.
+Der entscheidende Punkt, der diesen Abschnitt in seiner ersten Fassung falsch gerahmt hat: **Packen
+braucht keine Zugangsdaten.** Authentifizierung braucht nur der Import, und den machst du ohnehin im
+Browser. Also:
 
-### 1.4 Die Befehle
+1. `.github/workflows/package.yml` auf Abruf starten, über **Actions → Package → Run workflow**.
+   Herausgebername, Präfix und Solutionname sind dort überschreibbar; die Vorgaben sind `Ayonto`,
+   `ayonto` und `AyontoKanbanBoard`.
+2. Nach dem Lauf die Artefakte herunterladen: `solution-unmanaged` für DEV, `solution-managed` für
+   TEST und PROD später. Zusätzlich `solution-project-sources`, das das erzeugte Solutionprojekt
+   enthält.
+3. Das entpackte ZIP im Maker-Portal importieren, siehe Abschnitt 2.
 
-Platzhalter in spitzen Klammern. Alle Befehle **[Doku]**, keiner ausgeführt.
+Ein Tag, der auf `v` beginnt, löst denselben Workflow aus. `v0.2.0-m2` ist der erste.
+
+**Was der Workflow tut**, alles ohne Secrets: Node 20 und .NET 8 aufsetzen, die Power Platform CLI
+als .NET-Werkzeug installieren, `npm ci`, Produktionsbuild, Solutionprojekt über `pac solution init`
+und `pac solution add-reference` erzeugen, zweimal bauen und vier Artefakte ablegen. Einzelheiten in
+`docs/CI.md`.
+
+### 1.4 Warum kein Import über das Fließband
+
+Ein Import ist ein Eingriff in eine echte Umgebung. Er gehört an eine Person, nicht an einen
+Trigger, und er bräuchte als einziger Schritt Zugangsdaten im Repository. Beides ist für eine
+Governance-Lösung bei 50Hertz der falsche Zuschnitt. Der Import bleibt manuell.
+
+Falls später doch automatisiert werden soll, ist `pac solution import` der Befehl, und dann ist über
+Service Principal oder Umgebungs-Secrets zu entscheiden — eine eigene Frage, keine Fußnote hier.
+
+### 1.5 Die lokalen Befehle, als Alternative
+
+Diese Befehle sind der Weg für den Fall, dass jemand `pac` lokal installiert hat. Sie sind **nicht**
+der Hauptpfad. Keiner von ihnen wurde ausgeführt; alle sind gegen die CLI-Referenz auf Parameterebene
+geprüft. Platzhalter in spitzen Klammern.
 
 ```
-# Einmalig: Authentifizierungsprofil anlegen
-pac auth create --environment <UMGEBUNGS-URL-ODER-GUID> --name <PROFILNAME>
+# Power Platform CLI, plattformübergreifend als .NET-Werkzeug
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 
-# Profil prüfen
+# Authentifizierungsprofil, nur für den Weg über pac pcf push nötig
+pac auth create --environment <UMGEBUNGS-URL-ODER-GUID> --name <PROFILNAME>
 pac auth list
 pac org who
-```
 
-Zu `pac auth create`: die Seite `import-custom-controls.md` zeigt noch `--url`, die CLI-Referenz
-führt stattdessen `--environment` („Default environment (ID, url, unique name, or partial name)")
-und `--url` gar nicht mehr auf. **[Doku: `power-platform/developer/cli/reference/auth.md`]** Die
-Referenz ist die jüngere Quelle; deshalb steht hier `--environment`. Falls die installierte
-CLI-Fassung `--environment` nicht kennt, ist `--url <UMGEBUNGS-URL>` der Rückfall.
-**[Zu verifizieren: welche der beiden die vorhandene CLI akzeptiert]**
-
-```
 # Abhängigkeiten und Produktionsbuild
 npm ci
 npm run build -- --buildMode production
 
-# Schieben, aus dem Repositorywurzelverzeichnis
+# Variante A: schieben, aus dem Repositorywurzelverzeichnis
 pac pcf push --publisher-prefix <PUBLISHER-PREFIX> --environment <UMGEBUNGS-URL-ODER-GUID>
-```
 
-Optional, wenn das Control in eine benannte Solution statt in `PowerAppsTools_<Präfix>` soll:
-
-```
-pac pcf push --publisher-prefix <PUBLISHER-PREFIX> --solution-unique-name <SOLUTION_UNIQUE_NAME>
-```
-
-Für spätere Runden nach einer Codeänderung genügt derselbe `push`-Befehl; `--incremental` schiebt
-nur geänderte Dateien. **[Doku: CLI-Referenz zu `pac pcf push`]**
-
-**Der Weg über ein `cdsproj`, nur zur Vollständigkeit — in diesem Lauf nicht auszuführen:**
-
-```
-mkdir Solutions
-cd Solutions
+# Variante B: packen wie das Fließband
+mkdir -p solution/AyontoKanbanBoard
+cd solution/AyontoKanbanBoard
 pac solution init --publisher-name <HERAUSGEBERNAME> --publisher-prefix <PUBLISHER-PREFIX>
-pac solution add-reference --path ..
-msbuild /t:restore
-msbuild /p:configuration=Release
+pac solution add-reference --path ../..
+dotnet build --configuration Debug     # unmanaged
+dotnet build --configuration Release   # managed
 ```
 
-Die erzeugte Datei liegt danach unter `bin\Debug\` beziehungsweise `bin\Release\`. **[Doku:
-`import-custom-controls.md`: „After the build succeeds, find the generated solution files inside the
-`\bin\debug\` folder"]** Debug erzeugt unmanaged, Release managed; überschreibbar durch
-`<SolutionPackageType>` im `cdsproj`. **[Doku: ebenda und `code-components-alm.md`]** Der Import
-liefe dann über `pac solution import --path <ZIP> --environment <URL> --publish-changes`.
-**[Doku: CLI-Referenz zu `pac solution import`]**
+Zu `pac auth create`: die Seite `import-custom-controls.md` zeigt noch `--url`, die CLI-Referenz
+führt stattdessen `--environment` und `--url` gar nicht mehr auf.
+**[Doku: `power-platform/developer/cli/reference/auth.md`]** Die Referenz ist die jüngere Quelle.
+**[Zu verifizieren: welche der beiden die vorhandene CLI akzeptiert]**
 
-### 1.5 Produktionsbuild — und eine Unstimmigkeit in der Doku
+**Wann `pac pcf push` statt packen?** Wenn jemand `pac` lokal hat und eine schnelle Schleife über
+viele Runden braucht. `push` umgeht ausdrücklich die Versionspflicht:
 
-Die Tabelle in `code-components-alm.md` sagt:
+> „The `push` capability speeds up the inner-developer cycle development because it bypasses the code
+> component versioning requirements and doesn't require that you build your solution (cdsproj) to
+> import the code component."
+> **[Doku: `import-custom-controls.md`]**
 
-| Befehl auf dem `pcfproj` | Ergebnis |
-| --- | --- |
-| `npm run build` | Entwicklungsbuild (Vorgabe) |
-| `npm run build -- --buildMode production` | Release-Build |
-| `pac pcf push` | Entwicklungsbuild, außer `PcfBuildMode` steht im `pcfproj` auf `production` |
+Über den Paketweg kostet dagegen jede Runde eine Erhöhung der Manifest-Version, sonst liefert die
+Model-Driven-App die zwischengespeicherte Fassung aus:
 
-**Zwei Dinge folgen daraus.**
+> „When deploying an update to a code component, the version in the `ControlManifest.Input.xml` must
+> at minimum have its PATCH (the last part of the version) incremented for the change to be
+> detected."
+> **[Doku: `code-components-alm.md`]**
 
-Erstens: **`pac pcf push` erzeugt per Vorgabe einen Entwicklungsbuild.** Die Doku warnt ausdrücklich:
-„Don't normally deploy a code component into Microsoft Dataverse that you built in development mode.
-The component is often too large to import and might result in slower runtime performance."
-Für die Verifikationsläufe ist das hinnehmbar und sogar hilfreich — unminimierter Code liest sich in
-der Browserkonsole besser. Für eine Messung von Ladezeiten oder Bundlegröße ist es unbrauchbar.
-Wer das ändern will, setzt `<PcfBuildMode>production</PcfBuildMode>` unter `<OutputPath>` im
-`pcfproj`. Das ist eine Repository-Änderung und in diesem Lauf nicht vorgenommen.
+**Das ist die wichtigste Betriebsregel dieses Runbooks.** Wer über Artefakte importiert und nach
+einer Codeänderung erneut importiert, ohne die Version zu erhöhen, prüft gegen den alten Stand und
+merkt es nicht. Die Version steht heute auf `0.2.0`.
 
-Zweitens: dieselbe Seite schreibt an anderer Stelle `run build -- --buildMode release`, die Tabelle
-dagegen `--buildMode production`. Die beiden Angaben widersprechen sich. Welchen Wert `pcf-scripts`
-tatsächlich annimmt, ist hier nicht geprüft. **[Zu verifizieren: `npm run build -- --buildMode
-production` und, falls das scheitert, `release`]**
+### 1.6 Produktionsbuild, mit Zahlen
 
-Zur Einordnung: der heutige Entwicklungsbuild liegt bei **87.881 Byte** `bundle.js`. **[Repo:
-`out/controls/KanbanBoard/bundle.js`]** Diese Zahl ist der Bezugspunkt für Abschnitt 4.
+`npm run build -- --buildMode production`. Der Wert `production` ist belegt, und zwar an der
+Werkzeugkette statt an der Doku: `pcf-scripts` meldet bei einem unbekannten Wert „Supported values
+include 'development' or 'production'". **[Repo: `node_modules/pcf-scripts/diagnosticMessages.generated.js`]**
+Die Seite `code-components-alm.md` schreibt an einer Stelle `--buildMode release`; das ist ein Fehler
+der Seite. Die frühere Fassung dieses Abschnitts führte beides als offen — das ist damit erledigt.
 
-### 1.6 Eine Altlast im Repositorium
+| Modus | `bundle.js` | gemessen |
+| --- | --- | --- |
+| `development`, die Vorgabe | 87.881 Byte | ja |
+| `production` | 25.394 Byte | ja |
+
+`pac pcf push` erzeugt per Vorgabe einen Entwicklungsbuild, sofern `PcfBuildMode` im `pcfproj` nicht
+auf `production` steht. **[Doku: `code-components-alm.md`]** Der Paketweg über das Fließband baut
+immer im Produktionsmodus.
+
+### 1.7 Eine Altlast im Repositorium
 
 `DEPLOYMENT.md` im Wurzelverzeichnis stammt aus dem Upstream-Fork. Sie beschreibt ein Control namens
 „Pipeline Kanban" mit Eigenschaften `groupByField` und `valueField`, konfiguriert über **Show As** auf
@@ -280,18 +286,26 @@ unverändert; sie gehört bereinigt, sobald der Import einmal funktioniert hat.
 
 ### 2.1 Reihenfolge
 
-1. Herausgeber in der DEV-Umgebung festlegen oder anlegen, Präfix notieren. **[Zu verifizieren:
-   ob bei 50Hertz ein Herausgeber vorgegeben ist]**
-2. `pac auth create` gegen DEV, `pac org who` zur Kontrolle.
-3. `npm ci`, dann Produktionsbuild nach 1.5.
-4. `pac pcf push` mit dem Präfix aus Schritt 1.
-5. Prüfen, dass das Control in der Umgebung angekommen ist. **[Zu verifizieren: wo genau die
-   Liste der Code-Komponenten in der heutigen Oberfläche steht]** Belegt ist nur, dass eine
-   unmanaged Solution `PowerAppsTools_<Präfix>` entsteht, wenn keine Zielsolution genannt wurde.
-6. Control auf dem Subgrid konfigurieren, siehe 2.2.
-7. Speichern und **veröffentlichen**. Ohne Veröffentlichen greift die Änderung nicht. **[Doku:
-   „**Save** and **Publish**", Tutorialseite]**
+1. **Herausgeber** in der DEV-Umgebung festlegen oder anlegen, Präfix notieren. **[Zu verifizieren:
+   ob bei 50Hertz ein Herausgeber vorgegeben ist]** Das Präfix muss dasselbe sein, das später in
+   TEST und PROD gilt, sonst lässt sich das Control nicht in die eigentliche Solution übernehmen.
+   **[Doku: `code-components-alm.md`: „That solution must share the same solution publisher…"]**
+2. **Workflow starten**: Actions → Package → Run workflow, Herausgeber und Präfix aus Schritt 1
+   eintragen.
+3. Nach dem Lauf **`solution-unmanaged` herunterladen** und entpacken. Darin liegt die ZIP-Datei.
+4. **Importieren** über [make.powerapps.com](https://make.powerapps.com) → Solutions → Import
+   solution → die ZIP wählen. **[Doku: `import-custom-controls.md` verweist für den Import auf
+   `maker/data-platform/import-update-export-solutions.md`]**
+5. Prüfen, dass das Control in der Umgebung angekommen ist. **[Zu verifizieren: wo genau die Liste
+   der Code-Komponenten in der heutigen Oberfläche steht]**
+6. **Control auf dem Subgrid konfigurieren**, siehe 2.2.
+7. **Speichern und veröffentlichen.** Ohne Veröffentlichen greift die Änderung nicht.
+   **[Doku: „**Save** and **Publish**", Tutorialseite]**
 8. Formular öffnen und mit Abschnitt 3 beginnen.
+
+**Für jede weitere Runde nach einer Codeänderung**: Manifest-Version erhöhen, Workflow erneut
+starten, neu importieren. Die Erhöhung ist nicht optional — ohne sie liefert die Model-Driven-App
+den zwischengespeicherten Stand aus. Siehe 1.5.
 
 ### 2.2 Konfiguration im Formulardesigner
 
@@ -466,17 +480,20 @@ Messwerte allein reichen dafür nicht.
 
 ### Punkt 5 — Lädt das virtuelle Dataset-Control
 
-**Vorab, ohne Umgebung, dreißig Sekunden** — der billigste Erkenntnisgewinn dieses ganzen Laufs:
+**Vorab, ohne Umgebung: der Job `probe-virtual-dataset`.** Er läuft in
+`.github/workflows/package.yml` mit, blockiert nicht und ruft
 
 ```
-pac pcf init -n Wegwerf -ns Wegwerf -t dataset -fw react -o <LEERES-VERZEICHNIS>
+pac pcf init --name Wegwerf --namespace Wegwerf --template dataset --framework react
 ```
 
-Nimmt die CLI das an, ist die Kombination im Werkzeug vorgesehen; das erzeugte
-`ControlManifest.Input.xml` zeigt dann, wie der Hersteller sie schreibt — und ob es dabei Attribute
-setzt, die unserem Manifest fehlen. Lehnt sie ab, ist Punkt 5 beantwortet, bevor irgendetwas
-importiert wurde. **Das erzeugte Verzeichnis danach wegwerfen; nichts davon gehört ins
-Repositorium.** Siehe Befund A.
+in einem temporären Verzeichnis auf. Sein Protokoll zeigt den Exitcode und, bei Erfolg, das erzeugte
+Manifest. Nimmt die CLI die Kombination an, ist sie im Werkzeug vorgesehen und das Manifest zeigt,
+welche Attribute der Hersteller setzt und unserem fehlen — `cds-data-set-options` ist der erste
+Verdacht. Lehnt sie ab, ist Punkt 5 beantwortet, bevor irgendetwas importiert wurde. Siehe Befund A.
+
+**Dieses Protokoll ist vor dem Import zu lesen.** Es kostet nichts und verändert, worauf beim
+Formular überhaupt zu achten ist.
 
 **Was zu tun ist.** Nach Abschnitt 2 importieren und konfigurieren, Formular öffnen.
 
@@ -488,6 +505,13 @@ verschiedene Ursachen, die im Browser gleich aussehen:
 | Konsole zeigt einen Fehler zum Bundle-Abruf, Netzwerkreiter einen fehlgeschlagenen Aufruf | Das Bundle wird nicht geladen. Das ist der echte negative Befund. |
 | Bundle wird geladen, Punkt-1-Meldung erscheint, aber nichts ist zu sehen | Das Control **läuft**. Der Container hat vermutlich Höhe null — Befund E. Kein negativer Befund für Punkt 5. |
 | Weder Fehler noch Meldung, der Platz zeigt das gewohnte Subgrid | Das Control ist gar nicht konfiguriert oder die Veröffentlichung fehlt. |
+
+**Seit `0.2.1` hat die Wurzel eine Mindesthöhe von 240 Pixeln** (`min-height` auf
+`.ayonto-kanban-root`), damit ein Container ohne eigene Höhe das Board nicht auf null zusammenfallen
+lässt. Damit wird die zweite Zeile der Tabelle seltener und, wenn sie eintritt, sichtbarer: ein Board
+mit Mindesthöhe zeigt wenigstens seine Spaltenköpfe. **Die Dreiertabelle bleibt trotzdem
+maßgeblich.** Die Mindesthöhe beseitigt einen Auslöser, nicht die Verwechslungsgefahr — ein Bundle,
+das nicht lädt, rendert auch keine Wurzel, an der eine Mindesthöhe greifen könnte.
 
 **Der Container ist im Elementeninspektor zu prüfen, bevor irgendetwas als negativ gemeldet wird.**
 Ein Element mit `height: 0` oder ohne Kinder unterscheidet die zweite Zeile von der ersten. Die
@@ -519,8 +543,9 @@ Plattformbündeln filtern und die Dateinamen samt Versionsbestandteil notieren.
 
 **Was zurückzumelden ist.** Die gefundenen Versionsstrings, die Quelle (Konsolenausdruck oder
 Netzwerkeintrag), und ob im Bundle unseres Controls React tatsächlich fehlt — erkennbar an der Größe:
-87.881 Byte im Entwicklungsbuild sind zu klein, um React und Fluent zu enthalten, was bestätigt, dass
-die Platform Libraries beim Bauen wirksam waren. **[Repo]**
+25.394 Byte im Produktionsbuild sind zu klein, um React und Fluent zu enthalten, und das Bundle führt
+beide als `external "Reactv16"` und `external "FluentUIReactv940"`. Die Platform Libraries waren beim
+Bauen also wirksam. **[Repo]**
 
 ### Punkt 7 — Reihenfolge der Optionen
 
@@ -639,9 +664,13 @@ als ein Knopf in unserem eigenen CSS.
 
 ### 4.4 Was die Umstellung kostet
 
-- **Bundlegröße.** Heute 87.881 Byte im Entwicklungsbuild. **[Repo]** Hinzu kämen React und
-  React-DOM in Fassung 16.14 und, auf Weg 1, Fluent 9 mit Griffel. Eine Zahl steht hier bewusst
-  nicht: sie ist nach der Umstellung in einer Minute zu messen und wäre vorher geraten.
+- **Bundlegröße.** Gemessen: **25.394 Byte** im Produktionsbuild, 87.881 im Entwicklungsbuild.
+  **[Repo]** Diese 25 KB enthalten React und Fluent **nicht** — beide kommen über die Platform
+  Libraries und stehen im Bundle nur als `external "Reactv16"` und `external "FluentUIReactv940"`.
+  Nach einem Rückfall auf `standard` kämen React und React-DOM 16.14 hinzu und, auf Weg 1, Fluent 9
+  mit Griffel. Eine Zahl für den Nachher-Zustand steht hier bewusst nicht: sie ist nach der
+  Umstellung in einer Minute zu messen und wäre vorher geraten. Die Größenordnung ist aber
+  absehbar, weil allein `react-dom` in der Produktionsfassung ein Vielfaches dieser 25 KB wiegt.
 - **Themenbindung.** Entfällt. Die Doku nennt „Design and theme alignment with the Power Apps Fluent
   design system" ausdrücklich als Nutzen der Platform Libraries. **[Doku: dieselbe Seite]**
 - **Regel 15.** Wird gegenstandslos.
