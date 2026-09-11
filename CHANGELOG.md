@@ -7,6 +7,41 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Added
+
+- `.github/workflows/package.yml`: Packt die Dataverse-Solution, auf Abruf über
+  `workflow_dispatch` und bei jedem Tag, der auf `v` beginnt. Managed und unmanaged, beide als
+  Artefakt. **Ohne Secrets**, weil Packen keine Authentifizierung braucht; die braucht nur der
+  Import, und der bleibt eine Handlung im Maker-Portal.
+  Der Workflow installiert die Power Platform CLI als .NET-Werkzeug über den dokumentierten
+  plattformübergreifenden Weg, baut das Control mit `--buildMode production`, erzeugt das
+  Solutionprojekt mit `pac solution init` und `pac solution add-reference` und baut zweimal:
+  `Debug` liefert unmanaged, `Release` managed.
+- Nicht blockierender Job `probe-virtual-dataset` im selben Workflow. Er ruft `pac pcf init` mit
+  `--template dataset --framework react` auf und gibt Exitcode und erzeugtes Manifest ins Protokoll.
+  Damit beantwortet sich Punkt 5 aus `docs/DEV-VERIFICATION.md` so weit vorab, wie es ohne Umgebung
+  geht: ob das Werkzeug die Kombination vorsieht und welche Attribute es dabei setzt.
+
+### Changed
+
+- `docs/CI.md`: Der Platzhalterabschnitt „Solution-Packaging, noch nicht umgesetzt" ist durch die
+  Beschreibung des tatsächlichen Workflows ersetzt. Der Denkfehler, an dem er hing, ist benannt:
+  Zugangsdaten braucht nur der Import, nicht das Packen.
+- `docs/DEV-RUNBOOK.md` §1: Hauptpfad ist jetzt das Fließband. Die lokalen `pac`-Befehle bleiben als
+  Alternative stehen, sind aber nicht mehr der erste Weg, weil `pac` weder in der Arbeitsumgebung
+  noch auf dem Zielrechner vorhanden ist.
+  Zwei der acht offenen Punkte sind damit erledigt: `--buildMode` nimmt `production`, belegt an
+  `pcf-scripts` selbst statt an der widersprüchlichen Doku-Seite, und die Bundlegrößen sind
+  gemessen statt geschätzt — 25.394 Byte produktiv gegen 87.881 Byte im Entwicklungsbuild.
+
+### Notes
+
+- Das `cdsproj` wird vom Fließband erzeugt und **nicht** eingecheckt. `pac` lässt sich in der
+  Arbeitsumgebung nicht installieren, weil der Egress-Proxy `dot.net` sperrt, und die Datei samt
+  `src/Other/Solution.xml` aus dem Gedächtnis zu schreiben wäre nach Regel 2 unzulässig. Der
+  Workflow legt das erzeugte Projekt als Artefakt `solution-project-sources` ab; nach dem ersten
+  Lauf ist die echte Datei verfügbar und gehört dann eingecheckt.
+
 ## [0.2.0] - M2
 
 Meilensteine M1 und M2 abgeschlossen. Das Board rendert, lässt sich mit Zeiger und Tastatur

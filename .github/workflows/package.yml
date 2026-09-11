@@ -1,0 +1,153 @@
+name: Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      publisher_name:
+        description: Name des Dataverse-Herausgebers
+        required: true
+        default: Ayonto
+      publisher_prefix:
+        description: Anpassungspräfix des Herausgebers, 2 bis 8 Zeichen
+        required: true
+        default: ayonto
+      solution_name:
+        description: Name der Solution und des Solutionprojekts
+        required: true
+        default: AyontoKanbanBoard
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  PUBLISHER_NAME: ${{ github.event.inputs.publisher_name || 'Ayonto' }}
+  PUBLISHER_PREFIX: ${{ github.event.inputs.publisher_prefix || 'ayonto' }}
+  SOLUTION_NAME: ${{ github.event.inputs.solution_name || 'AyontoKanbanBoard' }}
+
+jobs:
+  package:
+    name: Solution packen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Power Platform CLI installieren
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: CLI-Version protokollieren
+        run: pac help
+
+      - name: Install
+        run: npm ci
+
+      - name: Control im Produktionsmodus bauen
+        run: npm run build -- --buildMode production
+
+      - name: Bundlegröße protokollieren
+        run: |
+          echo "bundle.js: $(stat -c%s out/controls/KanbanBoard/bundle.js) Byte"
+
+      - name: Solutionprojekt erzeugen
+        run: |
+          mkdir -p "solution/$SOLUTION_NAME"
+          cd "solution/$SOLUTION_NAME"
+          pac solution init \
+            --publisher-name "$PUBLISHER_NAME" \
+            --publisher-prefix "$PUBLISHER_PREFIX"
+          pac solution add-reference --path ../..
+
+      - name: Erzeugtes Solutionprojekt protokollieren
+        run: |
+          find "solution/$SOLUTION_NAME" -type f -not -path '*/obj/*' -not -path '*/bin/*' | sort
+          echo '--- cdsproj ---'
+          cat "solution/$SOLUTION_NAME/$SOLUTION_NAME.cdsproj"
+          echo '--- Solution.xml ---'
+          cat "solution/$SOLUTION_NAME/src/Other/Solution.xml" || true
+
+      - name: Unmanaged bauen
+        run: dotnet build "solution/$SOLUTION_NAME" --configuration Debug
+
+      - name: Managed bauen
+        run: dotnet build "solution/$SOLUTION_NAME" --configuration Release
+
+      - name: Erzeugte Pakete auflisten
+        run: find "solution/$SOLUTION_NAME/bin" -name '*.zip' -print -exec ls -la {} \;
+
+      - name: Unmanaged-Paket ablegen
+        uses: actions/upload-artifact@v4
+        with:
+          name: solution-unmanaged
+          path: solution/${{ env.SOLUTION_NAME }}/bin/Debug/*.zip
+          if-no-files-found: error
+
+      - name: Managed-Paket ablegen
+        uses: actions/upload-artifact@v4
+        with:
+          name: solution-managed
+          path: solution/${{ env.SOLUTION_NAME }}/bin/Release/*.zip
+          if-no-files-found: error
+
+      - name: Erzeugtes Solutionprojekt ablegen
+        uses: actions/upload-artifact@v4
+        with:
+          name: solution-project-sources
+          path: |
+            solution/${{ env.SOLUTION_NAME }}/*.cdsproj
+            solution/${{ env.SOLUTION_NAME }}/src/**
+          if-no-files-found: error
+
+  probe-virtual-dataset:
+    name: Probe virtual plus dataset
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Power Platform CLI installieren
+        run: |
+          dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Kombination dataset plus react anfordern
+        run: |
+          mkdir -p /tmp/probe
+          set +e
+          pac pcf init --name Wegwerf --namespace Wegwerf \
+            --template dataset --framework react --outputDirectory /tmp/probe
+          echo "Exitcode: $?"
+          set -e
+
+      - name: Erzeugtes Manifest ausgeben
+        run: |
+          if [ -f /tmp/probe/Wegwerf/ControlManifest.Input.xml ]; then
+            echo 'Die CLI hat die Kombination angenommen. Erzeugtes Manifest:'
+            cat /tmp/probe/Wegwerf/ControlManifest.Input.xml
+          else
+            echo 'Kein Manifest erzeugt. Verzeichnisinhalt:'
+            find /tmp/probe -type f | sort
+          fi
+
+      - name: Gegen unser Manifest halten
+        run: |
+          echo 'Hinweis: Vergleichspunkte sind control-type, die platform-library-Einträge'
+          echo 'und jedes Attribut am data-set-Element, insbesondere cds-data-set-options.'
