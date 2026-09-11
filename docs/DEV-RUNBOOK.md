@@ -15,6 +15,10 @@ Jeder Schritt trägt eine Marke:
 | **[Repo]** | Aus den Dateien dieses Repositories abgelesen. |
 | **[Zu verifizieren]** | Weder belegt noch abgelesen. Vor Ort zu prüfen, nicht zu raten. |
 
+Die Prüfliste in `docs/DEV-VERIFICATION.md` hat seit der ersten Fassung dieses Runbooks einen Punkt
+mehr: **5a, React 17 statt React 16 zur Laufzeit.** Er braucht keinen eigenen Handgriff und wird bei
+Punkt 2 mitbeobachtet.
+
 Die Dokumentation wurde nicht auf `learn.microsoft.com` gelesen — der Zugriff ist aus dieser Umgebung
 gesperrt — sondern in den Quellrepositories, aus denen Learn erzeugt wird:
 
@@ -501,6 +505,13 @@ verschiedene Ursachen, die im Browser gleich aussehen:
 | Konsole zeigt einen Fehler zum Bundle-Abruf, Netzwerkreiter einen fehlgeschlagenen Aufruf | Das Bundle wird nicht geladen. Das ist der echte negative Befund. |
 | Bundle wird geladen, Punkt-1-Meldung erscheint, aber nichts ist zu sehen | Das Control **läuft**. Der Container hat vermutlich Höhe null — Befund E. Kein negativer Befund für Punkt 5. |
 | Weder Fehler noch Meldung, der Platz zeigt das gewohnte Subgrid | Das Control ist gar nicht konfiguriert oder die Veröffentlichung fehlt. |
+
+**Seit `0.2.1` hat die Wurzel eine Mindesthöhe von 240 Pixeln** (`min-height` auf
+`.ayonto-kanban-root`), damit ein Container ohne eigene Höhe das Board nicht auf null zusammenfallen
+lässt. Damit wird die zweite Zeile der Tabelle seltener und, wenn sie eintritt, sichtbarer: ein Board
+mit Mindesthöhe zeigt wenigstens seine Spaltenköpfe. **Die Dreiertabelle bleibt trotzdem
+maßgeblich.** Die Mindesthöhe beseitigt einen Auslöser, nicht die Verwechslungsgefahr — ein Bundle,
+das nicht lädt, rendert auch keine Wurzel, an der eine Mindesthöhe greifen könnte.
 
 **Der Container ist im Elementeninspektor zu prüfen, bevor irgendetwas als negativ gemeldet wird.**
 Ein Element mit `height: 0` oder ohne Kinder unterscheidet die zweite Zeile von der ersten. Die

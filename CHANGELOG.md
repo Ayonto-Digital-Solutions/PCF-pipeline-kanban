@@ -7,6 +7,36 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Mindesthöhe von 240 Pixeln auf `.ayonto-kanban-root`. Ein Subgrid-Container ohne eigene Höhe
+  ließ das Board bisher auf null zusammenfallen, und das sieht im Browser genauso aus wie ein
+  Bundle, das gar nicht lädt. Die Verwechslung hätte Punkt 5 aus `docs/DEV-VERIFICATION.md` falsch
+  negativ beantwortet und in den Rückweg geführt, der den ganzen Entwurf kostet.
+  Die Mindesthöhe beseitigt einen Auslöser, nicht die Verwechslungsgefahr: ein Bundle, das nicht
+  lädt, rendert auch keine Wurzel. Die Dreiertabelle in `docs/DEV-RUNBOOK.md` §3 Punkt 5 bleibt
+  deshalb maßgeblich.
+- `.ayonto-kanban-drag-layer` war der einzige Selektor im Stylesheet ohne Präfix
+  `.ayonto-kanban-root` und hätte die Klasse überall im Host getroffen. Im DOM lag das Element schon
+  immer innerhalb der Wurzel; die Regel ist jetzt entsprechend gescoped. Gefunden hat das der neue
+  Stylesheet-Test, nicht das Auge.
+- Manifest-Version auf `0.2.1`. Eine Änderung am Control ohne Versionserhöhung wird von einer
+  Model-Driven-App nicht bemerkt.
+
+### Added
+
+- `__tests__/stylesheet.test.ts`: prüft die Mindesthöhe, dass die volle Höhe daneben bestehen bleibt,
+  und dass jede Regel unter `.ayonto-kanban-root` gescoped ist. Drei Tests, 221 insgesamt.
+- `docs/DEV-VERIFICATION.md` Punkt **5a, React 17 statt React 16 zur Laufzeit**. Die Doku sagt, dass
+  eine Model-Driven-App React `17.0.2` lädt, obwohl das Manifest `16.14.0` anfordert, während der
+  Code gegen 16.14 typisiert und getestet ist.
+  Der Punkt trägt das Ergebnis einer Durchsicht: **kein einziger `addEventListener` auf `document`
+  oder `window`**, alle Handler über React-Props, kein `stopPropagation`, kein asynchrones Lesen von
+  Ereignisfeldern, und die beiden `document.`-Zugriffe sind nicht ereignisbezogen. Die verlegte
+  Ereignisdelegation trifft damit keine Stelle im Code. Der Punkt bleibt trotzdem stehen, weil das
+  Zusammenspiel mit `setPointerCapture` im Browser weiterhin ungeprüft ist; er wird bei Punkt 2
+  mitbeobachtet und braucht keinen eigenen Handgriff.
+
 ### Added
 
 - `.github/workflows/package.yml`: Packt die Dataverse-Solution, auf Abruf über
