@@ -7,6 +7,30 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.2.0] - M2
+
+Meilensteine M1 und M2 abgeschlossen. Das Board rendert, lässt sich mit Zeiger und Tastatur
+bedienen, und der gesamte Stand ist auf dem Fließband grün.
+
+### Changed
+
+- Manifest-Version des Controls `Ayonto.KanbanBoard` von `1.0.0` auf `0.2.0` gesetzt. Regel 6
+  verlangt eine Erhöhung je Meilenstein; die `1.0.0` stammte unverändert aus dem Platzhalter-Manifest
+  des Scaffolds und war nie eine Aussage über Reife. Sie blieb über M1 und M2 unberührt stehen, die
+  Regel war also zweimal nicht angewandt.
+  Die Korrektur geht **nach unten**, und das ist genau einmal folgenlos möglich: nämlich jetzt. Die
+  Dokumentation knüpft an eine steigende Version das Verwerfen des Zwischenspeichers in
+  Model-Driven-Apps und die Aktualisierungsaufforderung in Canvas-Apps. Beides setzt voraus, dass das
+  Control bereits in einer Umgebung liegt. Es wurde nie importiert, es existiert keine Solution, und
+  damit gibt es keinen Verbraucher, dessen Zwischenspeicher eine höhere Zahl bräuchte. Nach dem
+  ersten Import wäre dieselbe Korrektur nicht mehr frei.
+  Rückwirkend gilt M1 als `0.1.0`, M2 als `0.2.0`. Die `0.4.0` weiter unten gehört dem
+  Upstream-Control `PipelineKanban`, das als `reference/PipelineKanban/` unverändert liegt und mit
+  diesem Control keine Versionslinie teilt.
+  `0.x` ist die ehrliche Reihe: das Control ist nicht paketierbar gewesen, hat nie in einem Host
+  geladen, und M3 sowie M4 stehen aus. Die `<resx>`-Einträge behalten ihre eigene `version`, die
+  keine Steuerungswirkung hat.
+
 ### Added
 
 - `docs/AUDIT.md`: Audit des Upstream-Stands. Bestätigt alle zwölf gelisteten Defekte mit Datei und

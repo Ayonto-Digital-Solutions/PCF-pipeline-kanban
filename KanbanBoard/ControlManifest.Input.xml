@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
-  <control namespace="Ayonto" constructor="KanbanBoard" version="1.0.0"
+  <control namespace="Ayonto" constructor="KanbanBoard" version="0.2.0"
            display-name-key="Control_Name" description-key="Control_Description"
            control-type="virtual">
 
