@@ -172,6 +172,35 @@ lädt — die angeforderte Fassung ist also **nicht** falsch und gehört nicht a
 
 ---
 
+## 5b. Was der Probe-Lauf vom 16.09.2026 beantwortet hat
+
+Der Job `probe-virtual-dataset` in `.github/workflows/package.yml` ist einmal gelaufen. Er ersetzt
+keinen der Punkte oben, verschiebt aber drei davon.
+
+**Die CLI nimmt `--template dataset --framework react` an.** Exitcode 0 mit
+`microsoft.powerapps.cli.tool` 2.12.2. Das erzeugte Manifest trägt `control-type="virtual"` und ein
+`<data-set>`-Element. Punkt 5 ist damit so weit beantwortet, wie es ohne Umgebung geht: die
+Kombination ist keine Grauzone, sondern das, was der Generator des Herstellers ausliefert. **Bauen
+bleibt trotzdem nicht Laden** — Punkt 5 bleibt offen, aber die Erwartung hat sich verschoben.
+
+**`cds-data-set-options` setzt der Generator nicht.** Unser Manifest lässt das Attribut in derselben
+Weise weg wie Microsofts eigene Vorlage. Die Schemareferenz führt es mit „Required: Yes"; der
+Generator widerspricht ihr. Der Punkt bleibt als Beobachtung beim Import stehen, ist aber kein
+Verdacht mehr, dem man vorbeugend nachgeben müsste.
+
+**Die Vorlage fordert Fluent `9.68.0` an, nicht `9.4.0`.** Das ist neu und betrifft Punkt 6 von der
+anderen Seite: nicht was der Host lädt, sondern was der Hersteller heute anzufordern empfiehlt.
+`9.68.0` liegt über der in der Doku genannten zulässigen Spanne `>=9.4.0 <=9.46.2`, deckt sich aber
+exakt mit deren Spalte „Version loaded". Die Spanne ist also veraltet. React bleibt bei `16.14.0`.
+
+**Was daraus folgt.** Vor dem DEV-Lauf ist zu entscheiden, ob wir auf Fluent `9.68.0` nachziehen.
+Dafür spricht, dass der Host es ohnehin lädt und unsere `9.4.0` damit eine Fiktion ist; dagegen, dass
+es nach Regel 15 `package.json` und Manifest gemeinsam bewegt und 64 Minor-Fassungen überspringt.
+Der Einsatz ist klein: `ErrorState.tsx` ist die einzige Datei, die Fluent überhaupt benutzt, und
+zwar für einen einzigen `Button`.
+
+---
+
 ## 6. Platform-Library-Versionen zur Laufzeit
 
 **Frage.** Lädt der Host React `16.14.0` und Fluent `9.4.0`, wie das Manifest sie anfordert?
@@ -227,7 +256,7 @@ ausdrücklich außerhalb dieses Repositories, die Lücke ist aber zu benennen un
 | Frage | Wie zu prüfen | Bei negativem Befund |
 | --- | --- | --- |
 | Ist `Lookup.Simple` für `cardTitle` im Maker anwählbar? | Control konfigurieren und prüfen, ob `eo_assessor` in der Auswahl erscheint | Rückfall auf eine gebundene Textspalte; der Assessor-Name käme dann nicht direkt |
-| Braucht `<data-set>` das Attribut `cds-data-set-options`? | Import und Konfiguration ohne das Attribut | Attribut ergänzen; die Dokumentation führt es als Pflicht, das Upstream-Control liefert ohne es aus |
+| ~~Braucht `<data-set>` das Attribut `cds-data-set-options`?~~ **Weitgehend geklärt**, siehe unten | Beim Import beobachten, ob eine Meldung zu Befehlsleiste, Ansichtswähler oder Schnellsuche auftritt | Attribut ergänzen |
 | Lösen die resx-Zeichenketten in 1031 auf? | Benutzersprache auf Deutsch stellen, Board laden | Namensschema und `<resx>`-Einträge prüfen; heute nur durch Manifest-Validierung belegt |
 | Zählt der Spaltenzähler mit `+` richtig? | Subgrid mit `RecordsPerPage = 20` und mehr als zwanzig Datensätzen | Paging-Auswertung prüfen; `totalResultCount` kann `-1` sein |
 | Sind virtuelle Controls Preview oder GA? | Unabhängig klären, nicht am Verhalten ablesen | Für eine Governance-Lösung ist das eine Freigabefrage, keine technische |

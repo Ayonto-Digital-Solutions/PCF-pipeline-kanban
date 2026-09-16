@@ -157,6 +157,28 @@ sich aus mit; die MSI-Fassung ist Windows-only, die VS-Code-Erweiterung hier geg
 Danach `npm ci`, ein Produktionsbuild, das Erzeugen des Solutionprojekts, zwei Builds und der
 Artefakt-Upload.
 
+### Erster Lauf: Ergebnis
+
+Lauf 1 am 16.09.2026, beide Jobs grün beim ersten Versuch, ohne Nachbesserung. Was er belegt:
+
+| | |
+| --- | --- |
+| CLI-Fassung | `microsoft.powerapps.cli.tool` 2.12.2, installiert in 7 Sekunden |
+| `dotnet build` | erledigt den Restore selbst; ein eigener `msbuild /t:restore` ist nicht nötig |
+| unmanaged | `bin/Debug/AyontoKanbanBoard.zip`, 24.731 Byte |
+| managed | `bin/Release/AyontoKanbanBoard.zip`, 17.104 Byte |
+| Bundle auf dem Runner | 24,4 KiB minimiert, deckt sich mit der lokalen Messung |
+| Solution Packager | 0 Warnungen, 0 Fehler; unter `CustomControls` steht `- Ayonto.KanbanBoard` |
+
+Das erzeugte Projekt besteht aus fünf Dateien: `AyontoKanbanBoard.cdsproj`, `.gitignore` und
+`src/Other/` mit `Solution.xml`, `Customizations.xml` und `Relationships.xml`.
+
+**Ein Befund aus der erzeugten `Solution.xml`**: sie trägt `<Version>1.0</Version>`, während das
+Control auf `0.2.1` steht. `pac solution init` schreibt die `1.0` fest und kennt die Manifest-Version
+nicht. Die ALM-Seite empfiehlt, Major und Minor der beiden gleichzuziehen. Das ist noch offen und
+verlangt entweder einen Schritt im Workflow, der die Datei nachzieht, oder ein eingechecktes
+Projekt, in dem die Zahl gepflegt wird.
+
 ### Warum das `cdsproj` erzeugt und nicht eingecheckt ist
 
 Der Auftrag lautete, ein `cdsproj` anzulegen. Der Workflow lässt es stattdessen von
@@ -167,9 +189,14 @@ Erfinden, das die Regel untersagt. Die Dokumentation zeigt einzelne Eigenschafte
 etwa `SolutionPackageType` und die `ProjectReference`, nirgends aber die vollständige Datei.
 
 Der Workflow legt das erzeugte Projekt deshalb zusätzlich als Artefakt `solution-project-sources`
-ab. **Nach dem ersten Lauf ist die echte, vom Werkzeug erzeugte Datei verfügbar und gehört dann
-eingecheckt**, womit der Workflow auf ein versioniertes Projekt umgestellt werden kann. Bis dahin
-ist das Erzeugen zur Bauzeit die einzige Fassung, die nicht geraten ist.
+ab.
+
+**Nach dem ersten Lauf ist die Lage eine andere, als dieser Absatz ursprünglich vorsah.** Das
+Erzeugen funktioniert, und es hat einen Vorzug, den ein eingechecktes Projekt nicht hat: Herausgeber,
+Präfix und Solutionname sind Eingaben des Workflows, das Ziel also ohne Dateiänderung wechselbar.
+Dagegen steht die Versionsfrage aus dem vorigen Abschnitt, die sich an einem eingecheckten Projekt
+leichter lösen lässt. Beides ist vertretbar; die Entscheidung steht aus und ist keine technische
+Notwendigkeit mehr.
 
 ### Managed und unmanaged
 
@@ -217,13 +244,36 @@ dokumentierte Einschränkung. Nimmt die CLI die Kombination an, ist sie vom Hers
 das erzeugte Manifest zeigt, welche Attribute er setzt und unserem fehlen — `cds-data-set-options`
 ist der erste Verdacht. Lehnt sie ab, ist Punkt 5 beantwortet, ohne dass etwas importiert wurde.
 
+**Ergebnis des ersten Laufs: die CLI nimmt die Kombination an.** Exitcode 0, „The Power Apps
+component framework project was successfully created." Das erzeugte Manifest trägt
+`control-type="virtual"` **und** ein `<data-set>`-Element. Das ist der Generator des Herstellers, der
+genau unsere Kombination ausliefert.
+
+Zwei weitere Befunde aus demselben Manifest:
+
+- **Kein `cds-data-set-options`.** Der Generator setzt das Attribut nicht. Unser Manifest lässt es
+  also in derselben Weise weg wie Microsofts eigene Vorlage, obwohl die Schemareferenz es mit
+  „Required: Yes" führt. Der Verdacht aus Punkt 9 ist damit weitgehend ausgeräumt.
+- **`<platform-library name="Fluent" version="9.68.0" />`.** Die aktuelle Vorlage fordert `9.68.0`
+  an, nicht `9.4.0`, und `9.68.0` liegt **über** der in der Doku genannten zulässigen Spanne
+  `>=9.4.0 <=9.46.2`. Die Spaltenangabe der Doku ist also veraltet, ihre Spalte „Version loaded"
+  mit `9.68.0` dagegen deckungsgleich mit dem, was die CLI heute schreibt. React bleibt bei
+  `16.14.0` und bestätigt unseren Wert.
+
 **Was der Job nicht leistet:** Er zeigt, was das Werkzeug zulässt, nicht, was der Host lädt. Bauen
 ist nicht Laden. Punkt 5 bleibt bis zum DEV-Lauf offen.
 
 ### Was weiterhin offen ist
 
-- Die Major- und Minor-Fassung in der erzeugten `Solution.xml` stammt aus `pac solution init` und
-  ist nicht auf die Manifest-Version `0.2.0` abgestimmt. `pac solution version` setzt nur Build und
-  Revision. Das ist zu klären, sobald das erzeugte Projekt eingecheckt ist.
-- Der Herausgeber. Vorgabe ist `Ayonto` mit Präfix `ayonto`; verbindlich ist, was die Zielumgebung
-  führt. Beides ist am `workflow_dispatch` überschreibbar.
+- **Solution-Version gegen Control-Version.** `Solution.xml` steht auf `1.0`, das Control auf
+  `0.2.1`. `pac solution version` setzt nur Build und Revision, nicht Major und Minor. Siehe oben.
+- **Fluent 9.4.0 gegen 9.68.0.** Wir fordern `9.4.0` an, die aktuelle CLI-Vorlage `9.68.0`, und der
+  Host lädt laut Doku ohnehin `9.68.0`. Ein Nachziehen beträfe nach Regel 15 `package.json` und
+  Manifest gemeinsam und wäre ein Sprung über 64 Minor-Fassungen von `@fluentui/react-components`.
+  Das ist eine Entscheidung, keine Reparatur, und gehört vor den DEV-Lauf geklärt, weil `ErrorState`
+  die einzige Stelle ist, die Fluent überhaupt benutzt.
+- **Node-20-Abkündigung.** Der Runner meldet für `actions/checkout@v4`, `setup-node@v4`,
+  `setup-dotnet@v4` und `upload-artifact@v4`, dass sie Node 20 anvisieren und auf Node 24 gezwungen
+  werden. Das betrifft `ci.yml` genauso und ist beim nächsten Anfassen mitzuziehen.
+- **Der Herausgeber.** Vorgabe ist `Ayonto` mit Präfix `ayonto`; verbindlich ist, was die
+  Zielumgebung führt. Beides ist am `workflow_dispatch` überschreibbar.

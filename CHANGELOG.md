@@ -7,6 +7,35 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Notes
+
+- **Der Packaging-Workflow ist gelaufen, Lauf 1 am 16.09.2026, beide Jobs grün ohne Nachbesserung.**
+  Erzeugt wurden ein unmanaged Paket mit 24.731 Byte und ein managed Paket mit 17.104 Byte; der
+  Solution Packager meldet 0 Warnungen und 0 Fehler und führt unter `CustomControls` den Eintrag
+  `- Ayonto.KanbanBoard`. `dotnet build` erledigt den Restore selbst, ein eigener `msbuild /t:restore`
+  ist entgegen der Erwartung nicht nötig.
+- **Die CLI nimmt `--template dataset --framework react` an.** Exitcode 0 mit Fassung 2.12.2, und das
+  erzeugte Manifest trägt `control-type="virtual"` zusammen mit einem `<data-set>`. Punkt 5 aus
+  `docs/DEV-VERIFICATION.md` ist damit so weit beantwortet, wie es ohne Umgebung geht; es bleibt
+  offen, weil Bauen nicht Laden ist.
+- **Der Generator setzt kein `cds-data-set-options`.** Unser Manifest lässt das Attribut in derselben
+  Weise weg wie Microsofts eigene Vorlage, obwohl die Schemareferenz es mit „Required: Yes" führt.
+- **Die Vorlage fordert Fluent `9.68.0` an, nicht `9.4.0`**, und `9.68.0` liegt über der in der Doku
+  genannten zulässigen Spanne `>=9.4.0 <=9.46.2`. Ob wir nachziehen, ist vor dem DEV-Lauf zu
+  entscheiden und beträfe nach Regel 15 `package.json` und Manifest gemeinsam. Neu als Punkt 5b in
+  `docs/DEV-VERIFICATION.md`.
+- Die erzeugte `Solution.xml` steht auf `<Version>1.0</Version>`, das Control auf `0.2.1`.
+  `pac solution version` setzt nur Build und Revision. Offen.
+- Der Runner meldet die Node-20-Abkündigung für `actions/checkout@v4`, `setup-node@v4`,
+  `setup-dotnet@v4` und `upload-artifact@v4`. Betrifft `ci.yml` genauso.
+
+### Changed
+
+- `docs/CI.md`, `docs/DEV-RUNBOOK.md` und `docs/DEV-VERIFICATION.md` tragen die Ergebnisse des
+  ersten Laufs. Der Vorabtest in §3 Punkt 5 des Runbooks ist von einer Anweisung zu einem Befund
+  geworden; die Dreiertabelle daneben bleibt unverändert gültig, weil sich die Erwartung geändert
+  hat und nicht der Beweis.
+
 ### Fixed
 
 - Mindesthöhe von 240 Pixeln auf `.ayonto-kanban-root`. Ein Subgrid-Container ohne eigene Höhe
