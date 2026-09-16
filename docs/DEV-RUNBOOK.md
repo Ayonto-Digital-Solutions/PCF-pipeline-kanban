@@ -183,7 +183,19 @@ Browser. Also:
    enthält.
 3. Das entpackte ZIP im Maker-Portal importieren, siehe Abschnitt 2.
 
-Ein Tag, der auf `v` beginnt, löst denselben Workflow aus. `v0.2.0-m2` ist der erste.
+Ein Tag, der auf `v` beginnt, löst denselben Workflow aus.
+
+**Der Workflow ist gelaufen.** Lauf 1 am 16.09.2026, beide Jobs grün beim ersten Versuch. Was dabei
+herauskam, also das, was du nach Schritt 2 herunterlädst:
+
+| Artefakt | Datei | Größe |
+| --- | --- | --- |
+| `solution-unmanaged` | `AyontoKanbanBoard.zip` | 24.731 Byte |
+| `solution-managed` | `AyontoKanbanBoard.zip` | 17.104 Byte |
+| `solution-project-sources` | `cdsproj` und `src/Other/` | 4 Dateien |
+
+Der Solution Packager meldet 0 Warnungen und 0 Fehler und führt unter `CustomControls` den Eintrag
+`- Ayonto.KanbanBoard`. Das Control ist also im Paket.
 
 **Was der Workflow tut**, alles ohne Secrets: Node 20 und .NET 8 aufsetzen, die Power Platform CLI
 als .NET-Werkzeug installieren, `npm ci`, Produktionsbuild, Solutionprojekt über `pac solution init`
@@ -365,13 +377,13 @@ Punkt 3 der Prüfliste, das Verschieben mit dem Finger, ist Tablet zwingend.
 1. **Keine Höheneigenschaft.** Siehe Befund E. Auf schmalen Formfaktoren kann der Container Höhe null
    haben. Falls das eintritt, ist die Abhilfe eine neue Eingabeeigenschaft im Manifest — Code, also
    nicht in diesem Lauf.
-2. **`cds-data-set-options` fehlt.** Die Schemareferenz führt das Attribut am `<data-set>`-Element
-   mit „Required: Yes" für Model-Driven-Apps. **[Doku:
-   `powerapps-docs/developer/component-framework/manifest-schema-reference/data-set.md`]** Unser
-   Manifest hat es nicht. **[Repo]** Falls Import oder Konfiguration daran scheitern, lautet der zu
-   ergänzende Wert nach dem Beispiel derselben Seite
+2. **`cds-data-set-options` fehlt — und das ist inzwischen weitgehend entlastet.** Die
+   Schemareferenz führt das Attribut mit „Required: Yes" für Model-Driven-Apps. **[Doku:
+   `powerapps-docs/developer/component-framework/manifest-schema-reference/data-set.md`]** Der
+   Generator der CLI 2.12.2 setzt es jedoch **nicht**, wie der Probe-Lauf gezeigt hat; unser Manifest
+   lässt es also in derselben Weise weg wie Microsofts eigene Vorlage. Sollte beim Import trotzdem
+   etwas daran scheitern, lautet der zu ergänzende Wert nach dem Beispiel derselben Seite
    `cds-data-set-options="displayCommandBar:true;displayViewSelector:true;displayQuickFind:true"`.
-   Das Upstream-Control liefert ohne das Attribut aus, weshalb es bisher nicht ergänzt wurde.
 
 ---
 
@@ -480,8 +492,22 @@ Messwerte allein reichen dafür nicht.
 
 ### Punkt 5 — Lädt das virtuelle Dataset-Control
 
-**Vorab, ohne Umgebung: der Job `probe-virtual-dataset`.** Er läuft in
-`.github/workflows/package.yml` mit, blockiert nicht und ruft
+**Das ist beantwortet, soweit es ohne Umgebung geht.** Der Job `probe-virtual-dataset` ist am
+16.09.2026 gelaufen, und die CLI 2.12.2 hat die Kombination **angenommen**: Exitcode 0, „The Power
+Apps component framework project was successfully created", und das erzeugte Manifest trägt
+`control-type="virtual"` zusammen mit einem `<data-set>`-Element. Die Kombination ist damit keine
+Grauzone, sondern das, was der Generator des Herstellers ausliefert.
+
+Zwei Nebenbefunde aus demselben Manifest: der Generator setzt **kein** `cds-data-set-options`, und er
+fordert Fluent **`9.68.0`** an statt `9.4.0`. Beides steht in `docs/DEV-VERIFICATION.md` unter 5b.
+
+**Was das nicht heißt.** Bauen ist nicht Laden, und ein Generator ist kein Host. Die Dreiertabelle
+unten bleibt in voller Schärfe gültig. Was sich geändert hat, ist die Erwartung, nicht der Beweis.
+
+<details>
+<summary>Der Job, wie er läuft</summary>
+
+Er läuft in `.github/workflows/package.yml` mit, blockiert nicht und ruft
 
 ```
 pac pcf init --name Wegwerf --namespace Wegwerf --template dataset --framework react
@@ -492,8 +518,7 @@ Manifest. Nimmt die CLI die Kombination an, ist sie im Werkzeug vorgesehen und d
 welche Attribute der Hersteller setzt und unserem fehlen — `cds-data-set-options` ist der erste
 Verdacht. Lehnt sie ab, ist Punkt 5 beantwortet, bevor irgendetwas importiert wurde. Siehe Befund A.
 
-**Dieses Protokoll ist vor dem Import zu lesen.** Es kostet nichts und verändert, worauf beim
-Formular überhaupt zu achten ist.
+</details>
 
 **Was zu tun ist.** Nach Abschnitt 2 importieren und konfigurieren, Formular öffnen.
 
