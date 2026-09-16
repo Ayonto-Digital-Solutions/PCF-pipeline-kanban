@@ -18,6 +18,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - 'claude/**'
 
 permissions:
   contents: read
