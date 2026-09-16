@@ -130,24 +130,100 @@ Das Einbinden kostet Laufzeit: der Transformationsschritt der Dokumenttests lieg
 Sekunden. Die Tests ohne Dokument laufen weiter in Millisekunden, weil `environmentMatchGlobs`
 `jsdom` nur auf `__tests__/**/*.dom.test.tsx` anwendet.
 
-## Solution-Packaging, noch nicht umgesetzt
+## Solution-Packaging
 
-Zu `M0-CI` gehört das Packen einer Dataverse-Solution über
-[`microsoft/powerplatform-actions`](https://github.com/microsoft/powerplatform-actions). Das ist
-hier bewusst **nicht** als halber Workflow angelegt, weil es ohne Umgebungszugang nichts prüft,
-sondern nur rot leuchtet.
+Der Workflow liegt in `.github/workflows/package.yml`. Er läuft auf Abruf über
+`workflow_dispatch` und bei jedem Tag, der auf `v` beginnt. Er blockiert `ci.yml` nicht und wird von
+ihm nicht ausgelöst.
 
-Was fehlt, bevor es sinnvoll wird:
+**Er braucht keine Secrets.** Das war der Denkfehler, an dem dieser Abschnitt vorher als Platzhalter
+hing: Zugangsdaten braucht nur der *Import* in eine Umgebung, nicht das *Packen*. Der Workflow packt
+und legt das Ergebnis als Artefakt ab. Der Import bleibt eine Handlung im Maker-Portal, mit dem
+Browser-Login der Person, die ihn verantwortet. Ein Import an einem Push-Trigger wäre ein Eingriff in
+eine echte Umgebung und ist weiterhin nicht vorgesehen.
 
-- Eine Zielumgebung samt Zugangsdaten als Repository- oder Environment-Secrets. Je nach gewähltem
-  Verfahren ein Service Principal mit Mandanten-, Anwendungs- und Geheimniswert, oder ein
-  Benutzerkonto mit Kennwort. Welche Werte genau nötig sind, richtet sich nach der Aktion und ist
-  vor der Umsetzung gegen deren Dokumentation zu prüfen, nicht aus dem Gedächtnis zu setzen.
-- Eine Entscheidung, ob das Fließband nur packt und das Ergebnis als Artefakt ablegt, oder ob es
-  auch importiert. Ein Import ist ein Eingriff in eine echte Umgebung und gehört nicht an einen
-  Push-Trigger.
-- Ein `cdsproj`-Solutionprojekt, das die `KanbanBoard.pcfproj` referenziert. Das Repository hat
-  heute nur das Control-Projekt.
+### Job `package`
 
-Solange das offen ist, erzeugt das Fließband kein Solution-Artefakt. Dieser Abschnitt ist der
-Platzhalter dafür, nicht ein auskommentierter Job.
+Node 20 und .NET 8, dann die Power Platform CLI als .NET-Werkzeug:
+
+```
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+```
+
+Das ist der dokumentierte plattformübergreifende Weg
+(`power-platform/developer/howto/install-cli-net-tool.md`). Der Runner bringt `pac` **nicht** von
+sich aus mit; die MSI-Fassung ist Windows-only, die VS-Code-Erweiterung hier gegenstandslos.
+
+Danach `npm ci`, ein Produktionsbuild, das Erzeugen des Solutionprojekts, zwei Builds und der
+Artefakt-Upload.
+
+### Warum das `cdsproj` erzeugt und nicht eingecheckt ist
+
+Der Auftrag lautete, ein `cdsproj` anzulegen. Der Workflow lässt es stattdessen von
+`pac solution init` und `pac solution add-reference` auf dem Runner erzeugen. Der Grund ist Regel 2:
+`pac` lässt sich in der Arbeitsumgebung nicht installieren, weil der Egress-Proxy `dot.net` sperrt,
+und ein `cdsproj` samt `src/Other/Solution.xml` aus dem Gedächtnis zu schreiben wäre genau das
+Erfinden, das die Regel untersagt. Die Dokumentation zeigt einzelne Eigenschaften des `cdsproj`,
+etwa `SolutionPackageType` und die `ProjectReference`, nirgends aber die vollständige Datei.
+
+Der Workflow legt das erzeugte Projekt deshalb zusätzlich als Artefakt `solution-project-sources`
+ab. **Nach dem ersten Lauf ist die echte, vom Werkzeug erzeugte Datei verfügbar und gehört dann
+eingecheckt**, womit der Workflow auf ein versioniertes Projekt umgestellt werden kann. Bis dahin
+ist das Erzeugen zur Bauzeit die einzige Fassung, die nicht geraten ist.
+
+### Managed und unmanaged
+
+Beide entstehen aus demselben Projekt über die Build-Konfiguration:
+
+| Befehl | Ergebnis | Artefakt |
+| --- | --- | --- |
+| `dotnet build --configuration Debug` | unmanaged | `solution-unmanaged` |
+| `dotnet build --configuration Release` | managed | `solution-managed` |
+
+Belegt in `powerapps-docs/developer/component-framework/import-custom-controls.md`: „Building the
+solution in the *debug* configuration generates an unmanaged solution package. Building the solution
+in *release* configuration generates a managed solution package." Für DEV ist unmanaged das
+Richtige, für TEST und PROD managed.
+
+### Produktionsbuild
+
+`npm run build -- --buildMode production`. Der Wert ist belegt, und zwar gegen die Werkzeugkette
+selbst statt gegen die Doku: `pcf-scripts/diagnosticMessages.generated.js` meldet bei einem
+unbekannten Wert „Unsupported buildMode '{0}' specified. Supported values include 'development' or
+'production'." Die Doku-Seite `code-components-alm.md` schreibt an einer Stelle
+`--buildMode release`; das ist ein Fehler der Seite, `release` ist kein zulässiger Wert.
+
+Der Unterschied ist erheblich und im Job-Protokoll nachlesbar:
+
+| Modus | `bundle.js` |
+| --- | --- |
+| `development`, die Vorgabe | 87.881 Byte |
+| `production` | 25.394 Byte |
+
+### Job `probe-virtual-dataset`
+
+Blockiert nicht. Er ruft
+
+```
+pac pcf init --name Wegwerf --namespace Wegwerf --template dataset --framework react
+```
+
+in einem temporären Verzeichnis auf und gibt Exitcode und, bei Erfolg, das erzeugte Manifest ins
+Job-Protokoll aus.
+
+Der Job beantwortet Punkt 5 aus `docs/DEV-VERIFICATION.md` vorab, soweit er sich ohne Umgebung
+beantworten lässt. `--template` und `--framework` sind in der CLI-Referenz unabhängige Schalter ohne
+dokumentierte Einschränkung. Nimmt die CLI die Kombination an, ist sie vom Hersteller vorgesehen und
+das erzeugte Manifest zeigt, welche Attribute er setzt und unserem fehlen — `cds-data-set-options`
+ist der erste Verdacht. Lehnt sie ab, ist Punkt 5 beantwortet, ohne dass etwas importiert wurde.
+
+**Was der Job nicht leistet:** Er zeigt, was das Werkzeug zulässt, nicht, was der Host lädt. Bauen
+ist nicht Laden. Punkt 5 bleibt bis zum DEV-Lauf offen.
+
+### Was weiterhin offen ist
+
+- Die Major- und Minor-Fassung in der erzeugten `Solution.xml` stammt aus `pac solution init` und
+  ist nicht auf die Manifest-Version `0.2.0` abgestimmt. `pac solution version` setzt nur Build und
+  Revision. Das ist zu klären, sobald das erzeugte Projekt eingecheckt ist.
+- Der Herausgeber. Vorgabe ist `Ayonto` mit Präfix `ayonto`; verbindlich ist, was die Zielumgebung
+  führt. Beides ist am `workflow_dispatch` überschreibbar.
